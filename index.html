@@ -41,7 +41,7 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
 
 /* 横向き: 大きい文字・画面幅フル活用 */
 @media (orientation:landscape){
-  :root{--fs:30px}
+  :root{--fs:32px}
   #topbar{flex-wrap:nowrap;padding:2px 8px;gap:4px;min-height:0}
   #song-title{font-size:13px;min-width:40px;max-width:100px}
   .ctrl-label{display:none}
@@ -52,12 +52,12 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
   #fs-badge{font-size:10px;min-width:16px}
   #next-chord-bar{padding:2px 12px;font-size:11px}
   .nxt-chord{font-size:18px}
-  #scroll-content{padding:6px 10px 70px}
+  #scroll-content{padding:4px 6px 70px}
   #overlay{padding:6px 12px 6px;gap:8px}
-  .song-line{padding:2px 6px}
-  .word{margin-bottom:2px}
-  .section-label{margin:8px 0 2px;font-size:10px}
-  .line-sep{margin:2px 0 4px}
+  .song-line{padding:2px 4px;width:100%}
+  .word{margin-bottom:1px}
+  .section-label{margin:6px 0 1px;font-size:10px}
+  .line-sep{margin:2px 0 3px}
 }
 
 /* 縦向き: topbarを2行に */
@@ -103,7 +103,8 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
 .song-line.active-line .chord-span:not(.empty){color:#ffe066}
 .lyric-span{
   font-size:var(--fs);color:var(--lyric);
-  white-space:pre;line-height:1.15;display:block;
+  white-space:normal;word-break:break-all;
+  line-height:1.15;display:block;
 }
 .song-line.active-line .lyric-span{color:#fff;font-weight:700}
 .song-line.next-line .lyric-span{color:#c0c0d8}
