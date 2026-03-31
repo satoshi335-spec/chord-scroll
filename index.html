@@ -205,9 +205,10 @@ input[type=file]{display:none}
 </div>
 
 <!-- RECエントリーボタン（画面固定・大きめ） -->
-<div id="rec-entry" style="position:fixed;bottom:60px;right:14px;z-index:300;pointer-events:all">
+<div id="rec-entry" style="position:fixed;bottom:60px;right:14px;z-index:300">
   <button id="rehearsal-btn"
-    style="background:#ff6432;color:#fff;border:none;border-radius:50%;width:52px;height:52px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,0.5);touch-action:manipulation;-webkit-user-select:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px">
+    onclick="event.stopPropagation();toggleRehearsalMode();"
+    style="background:#ff6432;color:#fff;border:none;border-radius:50%;width:56px;height:56px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.6);touch-action:manipulation;-webkit-user-select:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px">
     &#9679;<span style="font-size:9px;letter-spacing:.04em">REC</span>
   </button>
 </div>
@@ -922,22 +923,6 @@ function addScannedSong(){var raw=document.getElementById('scan-result').value.t
 
 // ==== INIT ====
 window.onerror=function(msg,src,line){var div=document.createElement('div');div.style.cssText='position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;font-size:12px;padding:8px;z-index:9999;font-family:monospace';div.textContent='Error: '+msg+' (line '+line+')';document.body.appendChild(div);};
-
-// RECボタン：伝播を完全に止める
-var recBtn=document.getElementById('rehearsal-btn');
-if(recBtn){
-  ['touchstart','touchend','touchmove','mousedown','mouseup','click'].forEach(function(ev){
-    recBtn.addEventListener(ev,function(e){
-      e.stopPropagation();
-      e.preventDefault();
-    },{passive:false});
-  });
-  recBtn.addEventListener('click',function(e){
-    e.stopPropagation();
-    toggleRehearsalMode();
-  });
-}
-
 loadState();
 render();
 </script>
