@@ -73,6 +73,30 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
 }
 
 .section-label{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin:14px 0 4px;opacity:.7}
+
+/* 待機ブロック（前奏・間奏など） */
+.wait-block{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 16px;margin:4px 0;border-radius:8px;background:rgba(232,69,69,0.08);border:1px solid rgba(232,69,69,0.2);cursor:pointer;touch-action:manipulation}
+.wait-label{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.12em;color:var(--accent);opacity:.8;margin-bottom:4px;text-transform:uppercase}
+.wait-countdown{font-family:'Fira Code',monospace;font-size:40px;font-weight:600;color:var(--accent);line-height:1}
+.wait-progress-wrap{width:100%;height:5px;background:rgba(232,69,69,0.15);border-radius:3px;margin-top:8px;overflow:hidden}
+.wait-progress-bar{height:100%;background:var(--accent);border-radius:3px;width:100%}
+.wait-block.counting{background:rgba(232,69,69,0.16);border-color:var(--accent)}
+
+/* ボーカルモード: コード非表示・歌詞大きく */
+body.vocal-mode .chord-span{display:none!important}
+body.vocal-mode .lyric-span{font-size:calc(var(--fs)*1.2)}
+body.vocal-mode .song-line{padding:8px 8px}
+#vocal-indicator{display:none;font-size:10px;color:var(--accent);font-family:'Fira Code',monospace;letter-spacing:.08em}
+body.vocal-mode #vocal-indicator{display:inline}
+
+/* リハーサルモード */
+#rehearsal-bar{display:none;flex-shrink:0;padding:4px 14px;background:linear-gradient(90deg,rgba(255,100,50,0.18),transparent);border-bottom:1px solid rgba(255,100,50,0.3);font-family:'Fira Code',monospace;font-size:11px;color:#ff6432;align-items:center;gap:10px}
+#rehearsal-bar.visible{display:flex}
+#rehearsal-dot{width:8px;height:8px;border-radius:50%;background:#ff6432;flex-shrink:0;animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+#rehearsal-info{flex:1}
+.btn-rec{background:#ff6432;color:#fff;font-weight:700}
+.btn-rec:active{background:#cc4020}
 .song-line{
   display:flex;flex-direction:row;flex-wrap:wrap;
   align-items:flex-end;
@@ -169,7 +193,16 @@ input[type=file]{display:none}
     <button class="btn" onclick="changeFS(+2)">A+</button>
   </div>
   <button class="btn" id="karaoke-btn" onclick="toggleKaraokeMode()">&#127908;</button>
+  <button class="btn" id="vocal-btn" onclick="toggleVocalMode()" title="ボーカルモード">&#127897; <span id="vocal-indicator">VOCAL</span></button>
+  <button class="btn btn-rec" id="rehearsal-btn" onclick="toggleRehearsalMode()" title="リハーサル録音">&#9679; REC</button>
   <button class="btn" id="edit-btn" onclick="editCurrentSong()">&#9998;</button>
+</div>
+
+<div id="rehearsal-bar">
+  <div id="rehearsal-dot"></div>
+  <div id="rehearsal-info">REC中 - スワイプで速度を調整して記録</div>
+  <button class="btn" onclick="saveRehearsal()" style="font-size:11px;padding:3px 8px">&#10003; 保存</button>
+  <button class="btn" onclick="cancelRehearsal()" style="font-size:11px;padding:3px 8px">&#10005;</button>
 </div>
 
 <div id="next-chord-bar">
@@ -218,8 +251,9 @@ input[type=file]{display:none}
   </div>
   <div class="panel-body">
     <div class="hint">
-      <code>title: 曲名</code> &#183; <code>key: G</code> &#183; <code>capo: 2</code> をヘッダーに<br>
-      コードは <code>[G]夏の[Em]終わり</code> 形式 / セクションは <code>[Verse]</code>
+      <code>title: 曲名</code> &#183; <code>key: G</code> &#183; <code>capo: 2</code> &#183; <code>vocal: off</code><br>
+      コードは <code>[G]夏の[Em]終わり</code> / セクションは <code>[Verse]</code><br>
+      待機は <code>[Intro bars:8]</code> → TAPテンポから自動カウントダウン
     </div>
     <textarea id="song-input" spellcheck="false"></textarea>
     <div class="editor-actions">
@@ -278,11 +312,27 @@ var SAMPLES = [SAMPLE1, SAMPLE2, SAMPLE3];
 var setlist = [], currentIndex = 0, transpose = 0, capo = 0;
 var fontSize = 24, scrollY = 0, scrollSpeed = 0, currentSpeedTarget = 40;
 var rafId = null, lastTs = null, editingIndex = -1;
-var activeLine = -1, lineElements = [], karaokeMode = false, tapTimes = [];
+var activeLine = -1, lineElements = [], waitElements = [], karaokeMode = false, tapTimes = [];
+var waitTimer = null;
+// リハーサルモード
+var rehearsalMode = false;
+var rehearsalFrames = []; // [{time, scrollY, speed}]
+var rehearsalStartTime = 0;
+var rehearsalPlayIndex = 0; // 再生時のフレームインデックス
 
 // ==== PERSIST ====
 function saveState() {
-  try { localStorage.setItem('cs3_sl', JSON.stringify(setlist)); localStorage.setItem('cs3_i', currentIndex); localStorage.setItem('cs3_fs', fontSize); } catch(e) {}
+  try {
+    localStorage.setItem('cs3_sl', JSON.stringify(setlist));
+    localStorage.setItem('cs3_i', currentIndex);
+    localStorage.setItem('cs3_fs', fontSize);
+  } catch(e) {}
+}
+function saveRehearsalData(idx, frames) {
+  try { localStorage.setItem('cs3_rh_'+idx, JSON.stringify(frames)); } catch(e) {}
+}
+function loadRehearsalData(idx) {
+  try { var d=localStorage.getItem('cs3_rh_'+idx); return d?JSON.parse(d):null; } catch(e){ return null; }
 }
 function loadState() {
   try {
@@ -302,17 +352,31 @@ function tChord(c,s){if(!s)return c;return c.replace(/[A-G][b#]?/g,function(m){r
 
 // ==== PARSE ====
 function parseSong(raw) {
-  var lines=raw.split('\n'), title='曲名なし', origCapo=0, origKey='C', blocks=[];
+  var lines=raw.split('\n'), title='曲名なし', origCapo=0, origKey='C', blocks=[], vocalOff=false;
   for (var i=0;i<lines.length;i++) {
     var tl=lines[i].trim();
     if (!tl){blocks.push({type:'blank'});continue;}
     if (/^title:/i.test(tl)){title=tl.replace(/^title:\s*/i,'');continue;}
     if (/^capo:/i.test(tl)){origCapo=parseInt(tl.replace(/^capo:\s*/i,''))||0;continue;}
     if (/^key:/i.test(tl)){origKey=tl.replace(/^key:\s*/i,'').trim();continue;}
+    if (/^vocal:\s*off/i.test(tl)){vocalOff=true;continue;}
+    if (/^vocal:\s*on/i.test(tl)){vocalOff=false;continue;}
+    // セクション行（[Verse] や [Intro bars:8] など）
     if (/^\[[^\]]+\]$/.test(tl)){
       var inner=tl.slice(1,-1);
-      var stripped=inner.replace(/[A-G][b#]?/g,'').replace(/[mM7sus4aug°dim9\/+]/g,'');
-      if(stripped.trim().length>0){blocks.push({type:'section',label:inner});continue;}
+      // bars: パラメータを抽出
+      var barsMatch=inner.match(/bars:(\d+)/i);
+      var bars=barsMatch?parseInt(barsMatch[1]):0;
+      var label=inner.replace(/\s*bars:\d+/i,'').trim();
+      var stripped=label.replace(/[A-G][b#]?/g,'').replace(/[mM7sus4aug°dim9\/+]/g,'');
+      if(stripped.trim().length>0){
+        if(bars>0){
+          blocks.push({type:'wait',label:label,bars:bars});
+        } else {
+          blocks.push({type:'section',label:label});
+        }
+        continue;
+      }
     }
     var tokens=[],re=/\[([^\]]+)\]([^\[]*)/g,m,hasChord=false;
     var fb=tl.indexOf('[');
@@ -321,7 +385,7 @@ function parseSong(raw) {
     if(hasChord)blocks.push({type:'chordline',tokens:tokens});
     else blocks.push({type:'lyricline',text:tl});
   }
-  return {title:title,origCapo:origCapo,origKey:origKey,blocks:blocks};
+  return {title:title,origCapo:origCapo,origKey:origKey,blocks:blocks,vocalOff:vocalOff};
 }
 
 // ==== RENDER ====
@@ -339,19 +403,51 @@ function render() {
   updateCapoDisplay();updateKeyDisplay(p.origKey);
   document.documentElement.style.setProperty('--fs',fontSize+'px');
   document.getElementById('fs-badge').textContent=fontSize;
+
+  // vocal mode
+  if(p.vocalOff){ document.body.classList.add('vocal-mode'); }
+  else { document.body.classList.remove('vocal-mode'); }
+  var vBtn=document.getElementById('vocal-btn');
+  if(p.vocalOff){vBtn.style.background='var(--accent)';vBtn.style.color='#fff';}
+  else{vBtn.style.background='';vBtn.style.color='';}
+
   var content=document.getElementById('scroll-content');
-  content.innerHTML='';lineElements=[];
+  content.innerHTML='';lineElements=[];waitElements=[];
   for(var i=0;i<p.blocks.length;i++){
     var block=p.blocks[i];
     if(block.type==='blank'){var s=document.createElement('div');s.className='line-sep';content.appendChild(s);}
     else if(block.type==='section'){var el=document.createElement('div');el.className='section-label';el.textContent=block.label;content.appendChild(el);}
+    else if(block.type==='wait'){
+      var wb=document.createElement('div');wb.className='wait-block';
+      wb.setAttribute('data-bars',block.bars);
+      var wlabel=document.createElement('div');wlabel.className='wait-label';wlabel.textContent=block.label+' ('+block.bars+'小節)';
+      var wcount=document.createElement('div');wcount.className='wait-countdown';wcount.textContent=block.bars;
+      var wpwrap=document.createElement('div');wpwrap.className='wait-progress-wrap';
+      var wpbar=document.createElement('div');wpbar.className='wait-progress-bar';
+      wpwrap.appendChild(wpbar);
+      wb.appendChild(wlabel);wb.appendChild(wcount);wb.appendChild(wpwrap);
+      content.appendChild(wb);
+      waitElements.push(wb);
+      lineElements.push(wb); // スクロール位置計算に含める
+    }
     else if(block.type==='chordline'){
       var lineEl=document.createElement('div');lineEl.className='song-line';
       for(var j=0;j<block.tokens.length;j++){
         var tok=block.tokens[j];
+        var lyricText=tok.lyric.replace(/\s+$/,''); // 末尾空白除去
+        var hasLyric=lyricText.length>0;
         var word=document.createElement('div');word.className='word';
-        var ce=document.createElement('span');ce.className='chord-span'+(tok.chord?'':' empty');ce.textContent=tok.chord?tChord(tok.chord,transpose):'\u00a0';
-        var le=document.createElement('span');le.className='lyric-span';le.textContent=tok.lyric;
+        var ce=document.createElement('span');
+        ce.className='chord-span'+(tok.chord?'':' empty');
+        ce.textContent=tok.chord?tChord(tok.chord,transpose):'\u00a0';
+        var le=document.createElement('span');le.className='lyric-span';
+        if(hasLyric){
+          le.textContent=tok.lyric;
+        } else {
+          // 歌詞なし・コードのみ → コードだけ表示、歌詞部分は非表示スペース
+          le.textContent='\u00a0'; // &nbsp; で高さ確保
+          le.style.visibility='hidden';
+        }
         word.appendChild(ce);word.appendChild(le);lineEl.appendChild(word);
       }
       content.appendChild(lineEl);lineElements.push(lineEl);
@@ -363,10 +459,154 @@ function render() {
       ww.appendChild(cc);ww.appendChild(lll);ll.appendChild(ww);content.appendChild(ll);lineElements.push(ll);
     }
   }
-  activeLine=-1;resetScroll();saveState();bindLineTap();
+  activeLine=-1;resetScroll();saveState();bindLineTap();updateRehearsalBadge();
 }
 
-// ==== KARAOKE ====
+// ==== VOCAL MODE ====
+function toggleVocalMode(){
+  document.body.classList.toggle('vocal-mode');
+  var on=document.body.classList.contains('vocal-mode');
+  var btn=document.getElementById('vocal-btn');
+  btn.style.background=on?'var(--accent)':'';
+  btn.style.color=on?'#fff':'';
+}
+
+// ==== REHEARSAL MODE ====
+function toggleRehearsalMode(){
+  if(rehearsalMode){ cancelRehearsal(); return; }
+  rehearsalMode=true;
+  rehearsalFrames=[];
+  rehearsalStartTime=Date.now();
+  document.getElementById('rehearsal-bar').classList.add('visible');
+  document.getElementById('rehearsal-btn').style.background='#ff6432';
+  // スクロールを最初に戻す
+  scrollY=0; applyScroll();
+  stopScroll();
+  document.getElementById('rehearsal-info').textContent='REC中 - 曲に合わせてスワイプして調整';
+}
+
+function recordRehearsalFrame(){
+  if(!rehearsalMode)return;
+  var t=(Date.now()-rehearsalStartTime)/1000;
+  // 直前のフレームと速度が変わっていれば記録
+  var last=rehearsalFrames.length>0?rehearsalFrames[rehearsalFrames.length-1]:null;
+  if(!last||Math.abs(last.scrollY-scrollY)>2){
+    rehearsalFrames.push({time:t, scrollY:scrollY, speed:scrollSpeed||currentSpeedTarget});
+  }
+}
+
+function saveRehearsal(){
+  if(!rehearsalMode)return;
+  // 最終フレームを記録
+  rehearsalFrames.push({time:(Date.now()-rehearsalStartTime)/1000, scrollY:scrollY, speed:0});
+  saveRehearsalData(currentIndex, rehearsalFrames);
+  rehearsalMode=false;
+  document.getElementById('rehearsal-bar').classList.remove('visible');
+  document.getElementById('rehearsal-btn').style.background='';
+  // 保存確認
+  document.getElementById('rehearsal-info').textContent='REC中 - 曲に合わせてスワイプして調整';
+  alert('記録を保存しました！ START で再生できます。');
+}
+
+function cancelRehearsal(){
+  rehearsalMode=false;
+  rehearsalFrames=[];
+  document.getElementById('rehearsal-bar').classList.remove('visible');
+  document.getElementById('rehearsal-btn').style.background='';
+}
+
+// リハーサル再生 - scrollFrameから呼ばれる
+function applyRehearsalPlayback(elapsed){
+  var frames=loadRehearsalData(currentIndex);
+  if(!frames||!frames.length)return false;
+  // elapsedに対応するフレームを探して補間
+  if(rehearsalPlayIndex>=frames.length-1){
+    stopScroll(); return true;
+  }
+  while(rehearsalPlayIndex<frames.length-1 && frames[rehearsalPlayIndex+1].time<=elapsed){
+    rehearsalPlayIndex++;
+  }
+  var f=frames[rehearsalPlayIndex];
+  var f2=rehearsalPlayIndex+1<frames.length?frames[rehearsalPlayIndex+1]:null;
+  if(f2){
+    var t=(elapsed-f.time)/(f2.time-f.time);
+    t=Math.max(0,Math.min(1,t));
+    scrollY=f.scrollY+(f2.scrollY-f.scrollY)*t;
+    scrollSpeed=f.speed+(f2.speed-f.speed)*t;
+  } else {
+    scrollY=f.scrollY; scrollSpeed=f.speed;
+  }
+  applyScroll();
+  return true;
+}
+
+// リハーサルデータ有無バッジを更新
+function updateRehearsalBadge(){
+  var btn=document.getElementById('rehearsal-btn');
+  var frames=loadRehearsalData(currentIndex);
+  if(frames&&frames.length>0){
+    btn.textContent='&#9654; PLAY'; btn.innerHTML='&#9654; PLAY';
+    btn.style.background='#2a6e40'; btn.style.color='#7fe0b8';
+  } else {
+    btn.innerHTML='&#9679; REC';
+    btn.style.background=''; btn.style.color='';
+  }
+}
+
+// ==== WAIT BLOCK カウントダウン ====
+function startWait(wb, seconds, onDone){
+  var total=seconds;
+  var elapsed=0;
+  var interval=100; // 100msごとに更新
+  wb.classList.add('counting');
+  var cntEl=wb.querySelector('.wait-countdown');
+  var barEl=wb.querySelector('.wait-progress-bar');
+  if(waitTimer){clearInterval(waitTimer);}
+  waitTimer=setInterval(function(){
+    elapsed+=interval/1000;
+    var remaining=Math.max(0,total-elapsed);
+    if(cntEl) cntEl.textContent=remaining>0?Math.ceil(remaining).toString():'GO';
+    if(barEl) barEl.style.width=Math.max(0,(1-elapsed/total)*100)+'%';
+    if(elapsed>=total){
+      clearInterval(waitTimer);waitTimer=null;
+      wb.classList.remove('counting');
+      if(cntEl) cntEl.textContent=wb.getAttribute('data-bars');
+      if(barEl) barEl.style.width='100%';
+      onDone();
+    }
+  },interval);
+}
+
+function checkWaitBlocks(){
+  if(!waitElements.length)return false;
+  var wrap=document.getElementById('scroll-wrap');
+  var wr=wrap.getBoundingClientRect();
+  var triggerY=wr.top+wr.height*0.28;
+  for(var i=0;i<waitElements.length;i++){
+    var wb=waitElements[i];
+    if(wb.classList.contains('counting'))return true; // すでに待機中
+    var r=wb.getBoundingClientRect();
+    var mid=r.top+r.height/2;
+    if(Math.abs(mid-triggerY)<r.height*0.7){
+      // このwaitブロックがフォーカス位置に来た
+      var bars=parseInt(wb.getAttribute('data-bars'))||4;
+      var bpm=parseInt(document.getElementById('tap-bpm').textContent)||80;
+      var beatsPerBar=4;
+      var seconds=(bars*beatsPerBar*60)/bpm;
+      var savedSpeed=scrollSpeed;
+      stopScroll();
+      startWait(wb,seconds,function(){
+        // カウントダウン終了後にスクロール再開
+        scrollSpeed=savedSpeed||currentSpeedTarget;
+        document.getElementById('play-btn').textContent='\u23f8 STOP';
+        document.getElementById('speed-display').textContent=String(scrollSpeed);
+        lastTs=null;rafId=requestAnimationFrame(scrollFrame);
+      });
+      return true;
+    }
+  }
+  return false;
+}
 function toggleKaraokeMode(){
   karaokeMode=!karaokeMode;
   var btn=document.getElementById('karaoke-btn');
@@ -438,6 +678,18 @@ function stopScroll(){
 }
 function toggleScroll(){
   if(scrollSpeed>0){stopScroll();return;}
+  var frames=loadRehearsalData(currentIndex);
+  if(frames&&frames.length>0&&!rehearsalMode){
+    // リハーサルデータがあれば再生モード
+    rehearsalPlayIndex=0;
+    rehearsalStartTime=Date.now();
+    scrollY=0;
+    scrollSpeed=frames[0].speed||40;
+    document.getElementById('play-btn').textContent='\u23f8 STOP';
+    document.getElementById('speed-display').textContent='REC';
+    lastTs=null;rafId=requestAnimationFrame(scrollFrame);
+    return;
+  }
   if(!currentSpeedTarget)currentSpeedTarget=40;
   scrollSpeed=currentSpeedTarget;
   document.getElementById('play-btn').textContent='\u23f8 STOP';
@@ -447,14 +699,46 @@ function toggleScroll(){
 function scrollFrame(ts){
   if(!lastTs)lastTs=ts;
   var dt=(ts-lastTs)/1000;lastTs=ts;
+  // リハーサル再生モード
+  var frames=loadRehearsalData(currentIndex);
+  if(frames&&frames.length>0&&!rehearsalMode){
+    var elapsed=(Date.now()-rehearsalStartTime)/1000;
+    if(applyRehearsalPlayback(elapsed)){
+      document.getElementById('speed-display').textContent=Math.round(scrollSpeed)||'—';
+      rafId=requestAnimationFrame(scrollFrame);
+      return;
+    }
+  }
   scrollY+=scrollSpeed*dt;applyScroll();
   var c=document.getElementById('scroll-content'),w=document.getElementById('scroll-wrap');
   if(scrollY>=c.scrollHeight-w.clientHeight){stopScroll();return;}
+  if(checkWaitBlocks())return;
   rafId=requestAnimationFrame(scrollFrame);
 }
-var tsy=0,tscy=0;
-document.getElementById('scroll-wrap').addEventListener('touchstart',function(e){tsy=e.touches[0].clientY;tscy=scrollY;if(scrollSpeed>0)stopScroll();},{passive:true});
-document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){scrollY=tscy+(tsy-e.touches[0].clientY);applyScroll();},{passive:true});
+var tsy=0,tscy=0,tsLastY=0,tsLastT=0;
+document.getElementById('scroll-wrap').addEventListener('touchstart',function(e){
+  tsy=e.touches[0].clientY;tscy=scrollY;tsLastY=tsy;tsLastT=Date.now();
+  if(scrollSpeed>0&&!rehearsalMode)stopScroll();
+},{passive:true});
+document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){
+  var cy=e.touches[0].clientY;
+  var dy=tsy-cy;
+  scrollY=tscy+dy;
+  // 速度を計算
+  var now=Date.now();
+  var dt2=(now-tsLastT)/1000;
+  if(dt2>0.05){
+    var spd=Math.abs((cy-tsLastY)/dt2);
+    var dir=(cy<tsLastY)?1:-1;
+    currentSpeedTarget=Math.max(0,Math.min(200,Math.round(spd)));
+    if(rehearsalMode){ scrollSpeed=dir>0?currentSpeedTarget:-currentSpeedTarget; recordRehearsalFrame(); }
+    tsLastY=cy;tsLastT=now;
+  }
+  applyScroll();
+},{passive:true});
+document.getElementById('scroll-wrap').addEventListener('touchend',function(){
+  if(rehearsalMode) recordRehearsalFrame();
+},{passive:true});
 function changeSpeed(d){
   currentSpeedTarget=Math.max(5,Math.min(200,currentSpeedTarget+d));
   if(scrollSpeed>0){scrollSpeed=currentSpeedTarget;document.getElementById('speed-display').textContent=String(currentSpeedTarget);}
