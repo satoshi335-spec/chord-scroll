@@ -10,202 +10,98 @@
   --bg:#0d0d0f; --surface:#16161a; --border:#2a2a30;
   --chord:#f4c842; --lyric:#e8e8f0; --lyric-dim:#505060;
   --accent:#e84545; --capo:#5bc8af; --ui-bg:rgba(13,13,15,0.96);
-  --hl-bg:rgba(244,200,66,0.10); --hl-border:#f4c842;
+  --hl-bg:rgba(244,200,66,0.12); --hl-border:#f4c842;
   --next-bg:rgba(91,200,175,0.08); --next-border:#5bc8af;
   --fs:24px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-serif;
-  overflow:hidden;height:100vh;height:100dvh;width:100vw;width:100dvw;display:flex;flex-direction:column}
-
-/* ── TOP BAR ── */
-#topbar{display:flex;align-items:center;gap:6px;padding:4px 10px;
-  background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
-#topbar .btn{pointer-events:all}
-#topbar .ctrl-group *{pointer-events:all}
-/* 縦向き時：曲名を全幅に */
-@media (orientation:portrait){
-  #song-title{order:-1;width:100%;flex-basis:100%;font-size:16px;padding:2px 0}
-  #topbar{padding:6px 10px}
-}
-#setlist-btn{background:none;border:1px solid var(--border);color:var(--chord);
-  font-size:17px;width:32px;height:32px;border-radius:6px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0}
-#setlist-btn:active{background:var(--border)}
-#song-title{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;
-  letter-spacing:.08em;color:var(--chord);flex:1;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+html,body{height:100%;width:100%}
+body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-serif;overflow:hidden;display:flex;flex-direction:column}
+#topbar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+#song-title{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:.08em;color:var(--chord);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;min-width:60px}
 .ctrl-group{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .ctrl-label{font-size:9px;color:var(--lyric-dim);letter-spacing:.05em;text-transform:uppercase}
-.btn{background:var(--border);border:none;color:var(--lyric);font-size:12px;
-  padding:3px 8px;border-radius:4px;cursor:pointer;font-family:'Fira Code',monospace;user-select:none}
+.btn{background:var(--border);border:none;color:var(--lyric);font-size:12px;padding:5px 9px;border-radius:4px;cursor:pointer;font-family:'Fira Code',monospace;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 .btn:active{background:#3a3a44}
-.btn-accent{background:var(--accent);color:#fff;font-weight:700;min-width:66px}
+.btn-accent{background:var(--accent);color:#fff;font-weight:700;min-width:70px}
 .btn-accent:active{background:#c53333}
 .btn-green{background:#1e5c40;color:#7fe0b8;font-weight:700}
-.btn-green:active{background:#174a33}
 .btn-blue{background:#1a3a5c;color:#7ab8f0;font-weight:700}
-.btn-blue:active{background:#132c47}
-#key-display{font-family:'Fira Code',monospace;font-size:13px;font-weight:600;
-  color:var(--chord);min-width:26px;text-align:center}
+#setlist-btn{background:none;border:1px solid var(--border);color:var(--chord);font-size:17px;width:34px;height:34px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation}
+#key-display{font-family:'Fira Code',monospace;font-size:13px;font-weight:600;color:var(--chord);min-width:28px;text-align:center}
 #capo-display{font-family:'Fira Code',monospace;font-size:12px;color:var(--capo);min-width:22px;text-align:center}
 #speed-display{font-family:'Fira Code',monospace;font-size:12px;color:var(--lyric-dim);min-width:34px;text-align:center}
 #fs-badge{font-family:'Fira Code',monospace;font-size:11px;color:var(--lyric-dim);min-width:24px;text-align:center}
-
-/* ── NEXT CHORD BANNER ── */
-#next-chord-bar{
-  display:none;flex-shrink:0;
-  padding:3px 14px;
-  background:linear-gradient(90deg,rgba(91,200,175,0.15),transparent);
-  border-bottom:1px solid rgba(91,200,175,0.2);
-  font-family:'Fira Code',monospace;font-size:12px;color:var(--capo);
-  letter-spacing:.06em;
-}
+#next-chord-bar{display:none;flex-shrink:0;padding:3px 14px;background:linear-gradient(90deg,rgba(91,200,175,0.15),transparent);border-bottom:1px solid rgba(91,200,175,0.2);font-family:'Fira Code',monospace;font-size:12px;color:var(--capo)}
 #next-chord-bar.visible{display:flex;align-items:center;gap:8px}
-#next-chord-bar .nxt-label{opacity:.6;font-size:10px}
-#next-chord-bar .nxt-chord{font-size:16px;font-weight:600}
-
-/* ── SCROLL AREA ── */
-#scroll-wrap{flex:1;overflow:hidden;position:relative;min-height:0}
-#scroll-content{padding:12px 16px 100px;will-change:transform}
-
-/* ── SONG BLOCKS ── */
-.section-label{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.15em;
-  text-transform:uppercase;color:var(--accent);margin:14px 0 4px;opacity:.7}
-.song-line{
-  display:flex;flex-wrap:wrap;align-items:flex-end;
-  margin-bottom:1px;line-height:1;
-  padding:6px 8px;border-radius:6px;
-  border-left:3px solid transparent;
-  transition:background .25s,border-color .25s;
-  cursor:pointer;
-}
-.song-line:active{background:rgba(255,255,255,0.04)}
-.song-line.active-line{
-  background:var(--hl-bg);border-left-color:var(--hl-border);
-}
-.song-line.next-line{
-  background:var(--next-bg);border-left-color:var(--next-border);
-}
-.word{display:inline-flex;flex-direction:column;align-items:flex-start;
-  margin-right:1px;margin-bottom:8px}
-.chord-span{
-  font-family:'Fira Code',monospace;font-size:calc(var(--fs)*0.68);font-weight:600;
-  color:var(--chord);height:calc(var(--fs)*0.82);line-height:1;white-space:nowrap;padding-bottom:2px}
+.nxt-label{opacity:.6;font-size:10px}
+.nxt-chord{font-size:16px;font-weight:600}
+#scroll-wrap{flex:1;min-height:0;overflow:hidden;position:relative}
+#scroll-content{padding:14px 16px 110px;will-change:transform;transform:translateY(0)}
+.section-label{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin:14px 0 4px;opacity:.7}
+.song-line{display:flex;flex-wrap:wrap;align-items:flex-end;margin-bottom:1px;line-height:1;padding:6px 8px;border-radius:6px;border-left:3px solid transparent;transition:background .25s,border-color .25s;cursor:pointer;touch-action:manipulation}
+.song-line.active-line{background:var(--hl-bg);border-left-color:var(--hl-border)}
+.song-line.next-line{background:var(--next-bg);border-left-color:var(--next-border)}
+.word{display:inline-flex;flex-direction:column;align-items:flex-start;margin-right:2px;margin-bottom:10px}
+.chord-span{font-family:'Fira Code',monospace;font-size:calc(var(--fs)*0.68);font-weight:600;color:var(--chord);height:calc(var(--fs)*0.82);line-height:1;white-space:nowrap;padding-bottom:2px}
 .chord-span.empty{visibility:hidden}
-.song-line.active-line .chord-span:not(.empty){color:#ffe066;font-size:calc(var(--fs)*0.76)}
+.song-line.active-line .chord-span:not(.empty){color:#ffe066}
 .lyric-span{font-size:var(--fs);color:var(--lyric);white-space:pre;line-height:1.2}
 .song-line.active-line .lyric-span{color:#fff;font-weight:700}
-.song-line.next-line .lyric-span{color:#c8c8e0}
+.song-line.next-line .lyric-span{color:#c0c0d8}
 .line-sep{width:100%;height:1px;background:var(--border);margin:4px 0 8px;opacity:.3}
-
-/* カラオケモード: スクロール中は画面上部に固定余白 */
-#scroll-content.karaoke-mode{padding-top:30vh}
-
-/* ── BOTTOM OVERLAY ── */
-#overlay{
-  position:fixed;bottom:0;left:0;right:0;
-  background:linear-gradient(transparent,var(--ui-bg) 50%);
-  padding:16px 14px 10px;
-  display:flex;justify-content:center;align-items:center;gap:10px;
-  pointer-events:none;flex-wrap:wrap
-}
-#overlay>*{pointer-events:all}
-#overlay .btn{pointer-events:all}
-#overlay .ctrl-group{pointer-events:all}
-#overlay .ctrl-group *{pointer-events:all}
-
-/* TAP TEMPO button — big touch target */
-#tap-btn{
-  background:#2a1a00;border:2px solid var(--chord);color:var(--chord);
-  font-family:'Fira Code',monospace;font-size:12px;font-weight:700;
-  padding:6px 12px;border-radius:8px;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;gap:1px;
-  min-width:58px;user-select:none;
-}
-#tap-btn:active{background:#3a2800}
+#overlay{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--ui-bg) 50%);padding:18px 14px 12px;display:flex;justify-content:center;align-items:center;gap:10px;pointer-events:none;flex-wrap:wrap}
+#overlay>*{pointer-events:all;touch-action:manipulation}
+#tap-btn{background:#2a1a00;border:2px solid var(--chord);color:var(--chord);font-family:'Fira Code',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:60px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 #tap-bpm{font-size:15px;line-height:1}
 #tap-label{font-size:9px;opacity:.6;letter-spacing:.08em}
-
-/* ── PANELS ── */
 .panel{display:none;position:fixed;inset:0;background:var(--bg);z-index:200;flex-direction:column}
 .panel.open{display:flex}
-.panel-header{display:flex;align-items:center;gap:10px;padding:10px 14px;
-  background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
-.panel-title{font-family:'Oswald',sans-serif;font-size:15px;color:var(--chord);
-  letter-spacing:.1em;flex:1}
-
-/* SETLIST */
-#setlist-list{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:5px}
-.setlist-item{display:flex;align-items:center;background:var(--surface);
-  border:1px solid var(--border);border-radius:8px;padding:9px 10px;gap:8px;cursor:pointer}
+.panel-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.panel-title{font-family:'Oswald',sans-serif;font-size:15px;color:var(--chord);letter-spacing:.1em;flex:1}
+#setlist-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;display:flex;flex-direction:column;gap:5px}
+.setlist-item{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;gap:8px;cursor:pointer;touch-action:manipulation}
 .setlist-item.active{border-color:var(--chord);background:#1c1a08}
-.setlist-item:active{background:#222228}
 .item-num{font-family:'Fira Code',monospace;font-size:11px;color:var(--lyric-dim);min-width:18px}
 .item-info{flex:1;overflow:hidden}
-.item-title{font-size:13px;color:var(--lyric);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.item-meta{font-family:'Fira Code',monospace;font-size:10px;color:var(--lyric-dim);margin-top:2px}
+.item-title{font-size:14px;color:var(--lyric);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-meta{font-family:'Fira Code',monospace;font-size:10px;color:var(--lyric-dim);margin-top:3px}
 .item-meta .capo-tag{color:var(--capo)}
 .item-actions{display:flex;gap:4px}
-.icon-btn{background:none;border:1px solid var(--border);color:var(--lyric-dim);
-  font-size:12px;width:28px;height:28px;border-radius:5px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center}
-.icon-btn:active{background:var(--border)}
+.icon-btn{background:none;border:1px solid var(--border);color:var(--lyric-dim);font-size:13px;width:30px;height:30px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation}
 .icon-btn.del{color:var(--accent);border-color:#3a1515}
-.icon-btn.del:active{background:#3a1515}
 .setlist-empty{text-align:center;color:var(--lyric-dim);font-size:13px;padding:40px 20px;line-height:2.2}
-#setlist-footer{padding:8px 12px;background:var(--surface);border-top:1px solid var(--border);
-  display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
-
-/* EDITOR */
+#setlist-footer{padding:10px 12px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
 #editor-panel .panel-body{flex:1;display:flex;flex-direction:column;padding:10px 14px 12px;gap:7px;overflow:hidden}
 .hint{font-size:11px;color:var(--lyric-dim);line-height:1.75}
 .hint code{color:var(--chord);font-family:'Fira Code',monospace}
-textarea{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--lyric);
-  font-family:'Fira Code',monospace;font-size:13px;padding:11px;
-  border-radius:6px;resize:none;outline:none;line-height:1.75}
+textarea{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--lyric);font-family:'Fira Code',monospace;font-size:13px;padding:11px;border-radius:6px;resize:none;outline:none;line-height:1.75;-webkit-overflow-scrolling:touch}
 .editor-actions{display:flex;gap:8px;justify-content:flex-end}
-
-/* SCAN PANEL */
-#scan-panel .panel-body{flex:1;display:flex;flex-direction:column;align-items:center;
-  justify-content:flex-start;padding:16px;gap:12px;overflow-y:auto}
-#scan-drop-area{
-  width:100%;max-width:480px;border:2px dashed var(--border);border-radius:10px;
-  padding:28px 20px;text-align:center;color:var(--lyric-dim);font-size:13px;
-  cursor:pointer;line-height:2;
-}
-#scan-drop-area:hover{border-color:var(--chord);color:var(--chord)}
-#scan-result{width:100%;max-width:480px;flex:1;
-  background:var(--surface);border:1px solid var(--border);color:var(--lyric);
-  font-family:'Fira Code',monospace;font-size:12px;padding:10px;
-  border-radius:6px;resize:none;outline:none;line-height:1.7;min-height:120px}
+#scan-panel .panel-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:14px;gap:12px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#scan-drop-area{width:100%;max-width:480px;border:2px dashed var(--border);border-radius:10px;padding:28px 20px;text-align:center;color:var(--lyric-dim);font-size:13px;cursor:pointer;line-height:2;touch-action:manipulation}
+#scan-result{width:100%;max-width:480px;background:var(--surface);border:1px solid var(--border);color:var(--lyric);font-family:'Fira Code',monospace;font-size:12px;padding:10px;border-radius:6px;resize:none;outline:none;line-height:1.7;min-height:140px;-webkit-overflow-scrolling:touch}
 .scan-status{font-size:12px;color:var(--capo);font-family:'Fira Code',monospace}
 input[type=file]{display:none}
-
-/* SPINNER */
-.spinner{display:inline-block;width:16px;height:16px;
-  border:2px solid var(--border);border-top-color:var(--chord);
-  border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--chord);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div id="topbar">
-  <button id="setlist-btn" onclick="openSetlist()">☰</button>
+  <button id="setlist-btn" onclick="openSetlist()">&#9776;</button>
   <div id="song-title" onclick="openSetlist()">読み込み中...</div>
   <div class="ctrl-group">
     <span class="ctrl-label">KEY</span>
-    <button class="btn" onclick="transposeKey(-1)">◀</button>
+    <button class="btn" onclick="transposeKey(-1)">&#9664;</button>
     <span id="key-display">C</span>
-    <button class="btn" onclick="transposeKey(+1)">▶</button>
+    <button class="btn" onclick="transposeKey(+1)">&#9654;</button>
   </div>
   <div class="ctrl-group">
     <span class="ctrl-label">CAPO</span>
-    <button class="btn" onclick="changeCapo(-1)">◀</button>
-    <span id="capo-display">—</span>
-    <button class="btn" onclick="changeCapo(+1)">▶</button>
+    <button class="btn" onclick="changeCapo(-1)">&#9664;</button>
+    <span id="capo-display">&#8212;</span>
+    <button class="btn" onclick="changeCapo(+1)">&#9654;</button>
   </div>
   <div class="ctrl-group">
     <span class="ctrl-label">SIZE</span>
@@ -213,506 +109,320 @@ input[type=file]{display:none}
     <span id="fs-badge">24</span>
     <button class="btn" onclick="changeFS(+2)">A+</button>
   </div>
-  <button class="btn" id="karaoke-btn" onclick="toggleKaraokeMode()" title="カラオケモード">🎤</button>
-  <button class="btn" onclick="editCurrentSong()">✏️</button>
+  <button class="btn" id="karaoke-btn" onclick="toggleKaraokeMode()">&#127908;</button>
+  <button class="btn" onclick="editCurrentSong()">&#9998;</button>
 </div>
 
-<!-- NEXT CHORD BANNER -->
 <div id="next-chord-bar">
   <span class="nxt-label">NEXT</span>
   <span id="nxt-chord-text" class="nxt-chord"></span>
 </div>
 
-<!-- SCROLL AREA -->
 <div id="scroll-wrap">
   <div id="scroll-content"></div>
 </div>
 
-<!-- BOTTOM OVERLAY -->
 <div id="overlay">
-  <button class="btn" onclick="prevSong()">⏮</button>
-
+  <button class="btn" onclick="prevSong()">&#9198;</button>
   <button id="tap-btn" onclick="tapTempo()">
     <span id="tap-bpm">TAP</span>
     <span id="tap-label">TEMPO</span>
   </button>
-
   <div class="ctrl-group">
     <span class="ctrl-label">SPEED</span>
-    <button class="btn" onclick="changeSpeed(-5)">－</button>
-    <span id="speed-display">—</span>
-    <button class="btn" onclick="changeSpeed(+5)">＋</button>
+    <button class="btn" onclick="changeSpeed(-5)">&#8722;</button>
+    <span id="speed-display">&#8212;</span>
+    <button class="btn" onclick="changeSpeed(+5)">&#43;</button>
   </div>
-
-  <button class="btn btn-accent" id="play-btn" onclick="toggleScroll()">▶ START</button>
-  <button class="btn" onclick="nextSong()">⏭</button>
+  <button class="btn btn-accent" id="play-btn" onclick="toggleScroll()">&#9654; START</button>
+  <button class="btn" onclick="nextSong()">&#9197;</button>
 </div>
 
-<!-- ═══ SETLIST PANEL ═══ -->
+<!-- SETLIST -->
 <div id="setlist-panel" class="panel">
   <div class="panel-header">
-    <span class="panel-title">📋 セットリスト</span>
-    <button class="btn" onclick="closeSetlist()">✕ 閉じる</button>
+    <span class="panel-title">&#128203; セットリスト</span>
+    <button class="btn" onclick="closeSetlist()">&#10005; 閉じる</button>
   </div>
   <div id="setlist-list"></div>
   <div id="setlist-footer">
-    <button class="btn btn-green" style="flex:1" onclick="openNewSongEditor()">＋ 手動で追加</button>
-    <button class="btn btn-blue" style="flex:1" onclick="openScanPanel()">📷 コード譜を読み込む</button>
-    <button class="btn" style="color:var(--lyric-dim);font-size:11px" onclick="resetAllData()">🔄 リセット</button>
+    <button class="btn btn-green" style="flex:1" onclick="openNewSongEditor()">&#43; 手動で追加</button>
+    <button class="btn btn-blue" style="flex:1" onclick="openScanPanel()">&#128247; コード譜を読み込む</button>
   </div>
 </div>
 
-<!-- ═══ EDITOR PANEL ═══ -->
+<!-- EDITOR -->
 <div id="editor-panel" class="panel">
   <div class="panel-header">
-    <span class="panel-title" id="editor-title">📝 曲を編集</span>
-    <button class="btn" onclick="closeEditor()">✕ キャンセル</button>
+    <span class="panel-title" id="editor-title">&#128221; 曲を編集</span>
+    <button class="btn" onclick="closeEditor()">&#10005; キャンセル</button>
   </div>
   <div class="panel-body">
     <div class="hint">
-      <code>title: 曲名</code> · <code>key: G</code> · <code>capo: 2</code> をヘッダーに<br>
-      コードは歌詞直前に <code>[G]夏の[Em]終わり</code> / セクションは <code>[Verse]</code>
+      <code>title: 曲名</code> &#183; <code>key: G</code> &#183; <code>capo: 2</code> をヘッダーに<br>
+      コードは <code>[G]夏の[Em]終わり</code> 形式 / セクションは <code>[Verse]</code>
     </div>
     <textarea id="song-input" spellcheck="false"></textarea>
     <div class="editor-actions">
-      <button class="btn btn-accent" onclick="applySong()">✓ 保存</button>
+      <button class="btn btn-accent" onclick="applySong()">&#10003; 保存</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ SCAN PANEL ═══ -->
+<!-- SCAN -->
 <div id="scan-panel" class="panel">
   <div class="panel-header">
-    <span class="panel-title">📷 コード譜を読み込む</span>
-    <button class="btn" onclick="closeScanPanel()">✕ 閉じる</button>
+    <span class="panel-title">&#128247; コード譜を読み込む</span>
+    <button class="btn" onclick="closeScanPanel()">&#10005; 閉じる</button>
   </div>
   <div class="panel-body">
-    <!-- Camera / Upload buttons -->
     <div style="display:flex;gap:10px;width:100%;max-width:480px">
-      <button class="btn btn-blue" style="flex:1;padding:10px;font-size:13px" onclick="document.getElementById('cam-input').click()">
-        📷 カメラで撮影
-      </button>
-      <button class="btn" style="flex:1;padding:10px;font-size:13px" onclick="document.getElementById('file-input').click()">
-        🖼 画像を選択
-      </button>
+      <button class="btn btn-blue" style="flex:1;padding:10px;font-size:13px" onclick="document.getElementById('cam-input').click()">&#128247; カメラで撮影</button>
+      <button class="btn" style="flex:1;padding:10px;font-size:13px" onclick="document.getElementById('file-input').click()">&#128444; 画像を選択</button>
     </div>
-    <!-- hidden inputs -->
     <input type="file" id="cam-input" accept="image/*" capture="environment" onchange="handleScanImage(this)">
     <input type="file" id="file-input" accept="image/*" onchange="handleScanImage(this)">
-
-    <!-- Preview area -->
     <div id="scan-preview-wrap" style="width:100%;max-width:480px;position:relative;display:none">
       <img id="scan-preview" alt="preview" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;border:1px solid var(--border)">
-      <button onclick="clearScan()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;cursor:pointer">✕ 再撮影</button>
-      <!-- analyzing overlay -->
-      <div id="scan-overlay" style="display:none;position:absolute;inset:0;background:rgba(13,13,15,0.75);border-radius:8px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+      <button onclick="clearScan()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;cursor:pointer">&#10005; 再撮影</button>
+      <div id="scan-overlay" style="display:none;position:absolute;inset:0;background:rgba(13,13,15,0.75);border-radius:8px;flex-direction:column;align-items:center;justify-content:center;gap:8px">
         <div class="spinner" style="width:28px;height:28px;border-width:3px"></div>
         <div style="color:var(--chord);font-size:13px;font-family:'Fira Code',monospace">AI解析中...</div>
       </div>
     </div>
-
     <div id="scan-drop-area" onclick="document.getElementById('file-input').click()">
       ここをタップして画像を選択<br>または「カメラで撮影」<br>
       <small style="opacity:.5">コード譜・手書き譜・印刷譜 対応</small>
     </div>
-
     <div id="scan-status-wrap" style="display:none;width:100%;max-width:480px">
       <span class="scan-status" id="scan-status-text"></span>
     </div>
-
-    <textarea id="scan-result" placeholder="AI解析結果がここに表示されます。内容を確認・修正してから「セットリストに追加」してください。" spellcheck="false"></textarea>
-    <div id="scan-actions" style="display:flex;gap:8px;width:100%;max-width:480px;justify-content:flex-end">
+    <textarea id="scan-result" placeholder="AI解析結果がここに表示されます。確認・修正してから追加してください。" spellcheck="false"></textarea>
+    <div style="display:flex;gap:8px;width:100%;max-width:480px;justify-content:flex-end">
       <button class="btn" onclick="clearScan()">クリア</button>
-      <button class="btn btn-accent" id="scan-add-btn" onclick="addScannedSong()" disabled>＋ セットリストに追加</button>
+      <button class="btn btn-accent" id="scan-add-btn" onclick="addScannedSong()" disabled>&#43; セットリストに追加</button>
     </div>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════
-//  SAMPLES
-// ═══════════════════════════════════════════
-const SAMPLES = [
-`title: 夏の終わりに
-key: G
-capo: 2
+// ==== SAMPLES (文字列連結) ====
+var SAMPLE1 = "title: 夏の終わりに\nkey: G\ncapo: 2\n\n[Verse]\n[G]夏の[Em]終わりに[C]君と[D]歩いた\n[G]あの日の[Em]記憶が[Am]消えない[D]よ\n\n[Chorus]\n[C]また会える[G]日まで[Am]待ちながら\n[Em]星を[C]数えて[D]眠る[G]夜";
+var SAMPLE2 = "title: カントリーロード\nkey: G\ncapo: 0\n\n[Verse]\n[G]故郷へ[D]続く道\n[Em]山々の[C]彼方へ\n[G]ウェスト[D]バージニア\n[C]マウンテン[G]ママ\n\n[Chorus]\n[G]カントリー[D]ロード\n[Em]故郷へ[C]連れて行って\n[G]属している[D]場所へ\n[C]カントリー[G]ロード";
+var SAMPLE3 = "title: 春風\nkey: C\ncapo: 0\n\n[Intro]\n[C] [Am] [F] [G]\n\n[Verse]\n[C]窓を開けると[Am]春の風が\n[F]頬をなでて[G]どこかへ行く\n\n[Chorus]\n[F]春の風に[C]乗って\n[Am]どこまでも[G]飛んでいく";
+var SAMPLES = [SAMPLE1, SAMPLE2, SAMPLE3];
 
-[Verse]
-[G]夏の[Em]終わりに[C]君と[D]歩いた
-[G]あの日の[Em]記憶が[Am]消えない[D]よ
+// ==== STATE ====
+var setlist = [], currentIndex = 0, transpose = 0, capo = 0;
+var fontSize = 24, scrollY = 0, scrollSpeed = 0, currentSpeedTarget = 40;
+var rafId = null, lastTs = null, editingIndex = -1;
+var activeLine = -1, lineElements = [], karaokeMode = false, tapTimes = [];
 
-[Chorus]
-[C]また会える[G]日まで[Am]待ちながら
-[Em]星を[C]数えて[D]眠る[G]夜`,
-
-`title: カントリーロード
-key: G
-capo: 0
-
-[Verse]
-[G]故郷へ[D]続く道
-[Em]山々の[C]彼方へ
-[G]ウェスト[D]バージニア
-[C]マウンテン[G]ママ
-
-[Chorus]
-[G]カントリー[D]ロード
-[Em]故郷へ[C]連れて行って
-[G]属している[D]場所へ
-[C]カントリー[G]ロード`,
-
-`title: 春風
-key: C
-capo: 0
-
-[Intro]
-[C] [Am] [F] [G]
-
-[Verse]
-[C]窓を開けると[Am]春の風が
-[F]頬をなでて[G]どこかへ行く
-[C]君の笑顔が[Am]浮かんで消えて
-[F]また明日を[G]待っている
-
-[Chorus]
-[F]春の風に[C]乗って
-[Am]どこまでも[G]飛んでいく
-[F]この気持ちを[C]君に
-[Am]届けたい[G] [C]`
-];
-
-// ═══════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════
-let setlist=[], currentIndex=0, transpose=0, capo=0;
-let fontSize=24, scrollY=0, scrollSpeed=0, currentSpeedTarget=40;
-let rafId=null, lastTs=null, editingIndex=-1;
-let activeLine=-1;   // index into rendered .song-line elements
-let lineElements=[];  // NodeList of .song-line divs for highlight
-let karaokeMode=false;
-
-// tap-tempo state
-let tapTimes=[];
-
-// ═══════════════════════════════════════════
-//  PERSIST
-// ═══════════════════════════════════════════
-function saveState(){
-  try{
-    localStorage.setItem('cs_setlist',JSON.stringify(setlist));
-    localStorage.setItem('cs_idx',currentIndex);
-    localStorage.setItem('cs_fs',fontSize);
-  }catch(e){}
+// ==== PERSIST ====
+function saveState() {
+  try { localStorage.setItem('cs3_sl', JSON.stringify(setlist)); localStorage.setItem('cs3_i', currentIndex); localStorage.setItem('cs3_fs', fontSize); } catch(e) {}
 }
-function loadState(){
-  try{
-    const sl=localStorage.getItem('cs_setlist');
-    if(sl){
-      const parsed=JSON.parse(sl);
-      // 壊れたデータチェック：配列かつ各要素にrawがあること
-      if(Array.isArray(parsed) && parsed.every(s=>s && typeof s.raw==='string')){
-        setlist=parsed;
-      }
+function loadState() {
+  try {
+    var sl = localStorage.getItem('cs3_sl'); if (sl) setlist = JSON.parse(sl);
+    var ci = localStorage.getItem('cs3_i'); if (ci !== null) currentIndex = parseInt(ci) || 0;
+    var fs = localStorage.getItem('cs3_fs'); if (fs) fontSize = parseInt(fs) || 24;
+  } catch(e) {}
+  if (!setlist.length) setlist = SAMPLES.map(function(r){ return {raw:r,transpose:0,capo:null}; });
+  currentIndex = Math.min(currentIndex, Math.max(0, setlist.length - 1));
+}
+
+// ==== NOTES ====
+var NS=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],NF=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+function nIdx(n){var i=NS.indexOf(n);return i>=0?i:NF.indexOf(n);}
+function tNote(n,s){var i=nIdx(n);return i<0?n:NS[(i+s+120)%12];}
+function tChord(c,s){if(!s)return c;return c.replace(/[A-G][b#]?/g,function(m){return tNote(m,s);});}
+
+// ==== PARSE ====
+function parseSong(raw) {
+  var lines=raw.split('\n'), title='曲名なし', origCapo=0, origKey='C', blocks=[];
+  for (var i=0;i<lines.length;i++) {
+    var tl=lines[i].trim();
+    if (!tl){blocks.push({type:'blank'});continue;}
+    if (/^title:/i.test(tl)){title=tl.replace(/^title:\s*/i,'');continue;}
+    if (/^capo:/i.test(tl)){origCapo=parseInt(tl.replace(/^capo:\s*/i,''))||0;continue;}
+    if (/^key:/i.test(tl)){origKey=tl.replace(/^key:\s*/i,'').trim();continue;}
+    if (/^\[[^\]]+\]$/.test(tl)){
+      var inner=tl.slice(1,-1);
+      var stripped=inner.replace(/[A-G][b#]?/g,'').replace(/[mM7sus4aug°dim9\/+]/g,'');
+      if(stripped.trim().length>0){blocks.push({type:'section',label:inner});continue;}
     }
-    const ci=localStorage.getItem('cs_idx');
-    if(ci!==null)currentIndex=parseInt(ci)||0;
-    const fs=localStorage.getItem('cs_fs');
-    if(fs)fontSize=parseInt(fs)||24;
-  }catch(e){
-    // localStorageが壊れていたらクリア
-    try{localStorage.clear();}catch(e2){}
-  }
-  if(!setlist.length)setlist=SAMPLES.map(raw=>({raw,transpose:0,capo:null}));
-  currentIndex=Math.min(currentIndex,Math.max(0,setlist.length-1));
-}
-
-function resetAllData(){
-  if(!confirm('全データをリセットしてサンプル曲に戻しますか？'))return;
-  try{localStorage.clear();}catch(e){}
-  setlist=SAMPLES.map(raw=>({raw,transpose:0,capo:null}));
-  currentIndex=0; transpose=0; capo=0; fontSize=24;
-  render();
-}
-
-// ═══════════════════════════════════════════
-//  NOTES
-// ═══════════════════════════════════════════
-const NS=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const NF=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
-function nIdx(n){let i=NS.indexOf(n);return i>=0?i:NF.indexOf(n)}
-function tNote(n,s){const i=nIdx(n);return i<0?n:NS[(i+s+120)%12]}
-function tChord(c,s){if(!s)return c;return c.replace(/[A-G][b#]?/g,m=>tNote(m,s))}
-
-// ═══════════════════════════════════════════
-//  PARSE
-// ═══════════════════════════════════════════
-function parseSong(raw){
-  const lines=raw.split('\n');
-  let title='曲名なし',origCapo=0,origKey='C',blocks=[];
-  for(const line of lines){
-    const tl=line.trim();
-    if(!tl){blocks.push({type:'blank'});continue}
-    if(/^title:/i.test(tl)){title=tl.replace(/^title:\s*/i,'');continue}
-    if(/^capo:/i.test(tl)){origCapo=parseInt(tl.replace(/^capo:\s*/i,''))||0;continue}
-    if(/^key:/i.test(tl)){origKey=tl.replace(/^key:\s*/i,'').trim();continue}
-    if(/^\[[^\]]+\]$/.test(tl)){
-      const inner=tl.slice(1,-1);
-      const stripped=inner.replace(/[A-G][b#]?/g,'').replace(/[mM7sus4aug°dim9\/+]/g,'');
-      if(stripped.trim().length>0){blocks.push({type:'section',label:inner});continue}
-    }
-    const tokens=[],re=/\[([^\]]+)\]([^\[]*)/g;
-    let m,hasChord=false;
-    const fb=tl.indexOf('[');
+    var tokens=[],re=/\[([^\]]+)\]([^\[]*)/g,m,hasChord=false;
+    var fb=tl.indexOf('[');
     if(fb>0)tokens.push({chord:'',lyric:tl.slice(0,fb)});
-    while((m=re.exec(tl))!==null){hasChord=true;tokens.push({chord:m[1],lyric:m[2]||' '})}
-    if(hasChord)blocks.push({type:'chordline',tokens});
+    while((m=re.exec(tl))!==null){hasChord=true;tokens.push({chord:m[1],lyric:m[2]||' '});}
+    if(hasChord)blocks.push({type:'chordline',tokens:tokens});
     else blocks.push({type:'lyricline',text:tl});
   }
-  return{title,origCapo,origKey,blocks};
+  return {title:title,origCapo:origCapo,origKey:origKey,blocks:blocks};
 }
 
-// ═══════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════
-function render(){
-  if(!setlist.length){
+// ==== RENDER ====
+function render() {
+  if (!setlist.length) {
     document.getElementById('song-title').textContent='曲がありません';
-    document.getElementById('scroll-content').innerHTML=
-      '<div style="padding:50px 20px;text-align:center;color:var(--lyric-dim);font-size:14px;line-height:2">セットリストに曲を追加してください</div>';
-    lineElements=[];
-    return;
+    document.getElementById('scroll-content').innerHTML='<div style="padding:50px 20px;text-align:center;color:var(--lyric-dim);font-size:15px;line-height:2.5">&#9776; をタップして<br>曲を追加してください</div>';
+    lineElements=[];return;
   }
-  const song=setlist[currentIndex];
+  var song=setlist[currentIndex];
   transpose=song.transpose||0;
-  const{title,origCapo,origKey,blocks}=parseSong(song.raw);
-  capo=(song.capo!==null&&song.capo!==undefined)?song.capo:origCapo;
-
-  document.getElementById('song-title').textContent=title;
-  updateCapoDisplay();updateKeyDisplay(origKey);
+  var p=parseSong(song.raw);
+  capo=(song.capo!==null&&song.capo!==undefined)?song.capo:p.origCapo;
+  document.getElementById('song-title').textContent=p.title;
+  updateCapoDisplay();updateKeyDisplay(p.origKey);
   document.documentElement.style.setProperty('--fs',fontSize+'px');
   document.getElementById('fs-badge').textContent=fontSize;
-
-  const content=document.getElementById('scroll-content');
-  content.innerHTML='';
-  lineElements=[];
-
-  for(const block of blocks){
-    if(block.type==='blank'){
-      const s=document.createElement('div');s.className='line-sep';content.appendChild(s);
-    }else if(block.type==='section'){
-      const el=document.createElement('div');el.className='section-label';
-      el.textContent=block.label;content.appendChild(el);
-    }else if(block.type==='chordline'){
-      const lineEl=document.createElement('div');lineEl.className='song-line';
-      for(const tok of block.tokens){
-        const word=document.createElement('div');word.className='word';
-        const ce=document.createElement('span');
-        ce.className='chord-span'+(tok.chord?'':' empty');
-        ce.textContent=tok.chord?tChord(tok.chord,transpose):'\u00a0';
-        const le=document.createElement('span');le.className='lyric-span';le.textContent=tok.lyric;
+  var content=document.getElementById('scroll-content');
+  content.innerHTML='';lineElements=[];
+  for(var i=0;i<p.blocks.length;i++){
+    var block=p.blocks[i];
+    if(block.type==='blank'){var s=document.createElement('div');s.className='line-sep';content.appendChild(s);}
+    else if(block.type==='section'){var el=document.createElement('div');el.className='section-label';el.textContent=block.label;content.appendChild(el);}
+    else if(block.type==='chordline'){
+      var lineEl=document.createElement('div');lineEl.className='song-line';
+      for(var j=0;j<block.tokens.length;j++){
+        var tok=block.tokens[j];
+        var word=document.createElement('div');word.className='word';
+        var ce=document.createElement('span');ce.className='chord-span'+(tok.chord?'':' empty');ce.textContent=tok.chord?tChord(tok.chord,transpose):'\u00a0';
+        var le=document.createElement('span');le.className='lyric-span';le.textContent=tok.lyric;
         word.appendChild(ce);word.appendChild(le);lineEl.appendChild(word);
       }
       content.appendChild(lineEl);lineElements.push(lineEl);
-    }else if(block.type==='lyricline'){
-      const lineEl=document.createElement('div');lineEl.className='song-line';
-      const word=document.createElement('div');word.className='word';
-      const ce=document.createElement('span');ce.className='chord-span empty';ce.textContent='\u00a0';
-      const le=document.createElement('span');le.className='lyric-span';le.textContent=block.text;
-      word.appendChild(ce);word.appendChild(le);lineEl.appendChild(word);
-      content.appendChild(lineEl);lineElements.push(lineEl);
+    } else if(block.type==='lyricline'){
+      var ll=document.createElement('div');ll.className='song-line';
+      var ww=document.createElement('div');ww.className='word';
+      var cc=document.createElement('span');cc.className='chord-span empty';cc.textContent='\u00a0';
+      var lll=document.createElement('span');lll.className='lyric-span';lll.textContent=block.text;
+      ww.appendChild(cc);ww.appendChild(lll);ll.appendChild(ww);content.appendChild(ll);lineElements.push(ll);
     }
   }
-  activeLine=-1;
-  resetScroll();saveState();
-  bindLineTap();
+  activeLine=-1;resetScroll();saveState();bindLineTap();
 }
 
-// ═══════════════════════════════════════════
-//  KARAOKE MODE
-// ═══════════════════════════════════════════
-let karaokeMode = false;
+// ==== KARAOKE ====
 function toggleKaraokeMode(){
-  karaokeMode = !karaokeMode;
-  const btn = document.getElementById('karaoke-btn');
-  const content = document.getElementById('scroll-content');
-  if(karaokeMode){
-    btn.style.background='var(--chord)';
-    btn.style.color='#000';
-    content.classList.add('karaoke-mode');
-  } else {
-    btn.style.background='';
-    btn.style.color='';
-    content.classList.remove('karaoke-mode');
-  }
-  applyScroll();
+  karaokeMode=!karaokeMode;
+  var btn=document.getElementById('karaoke-btn');
+  btn.style.background=karaokeMode?'var(--chord)':'';
+  btn.style.color=karaokeMode?'#000':'';
 }
-
-// ═══════════════════════════════════════════
-//  KARAOKE HIGHLIGHT
-// ═══════════════════════════════════════════
 function updateHighlight(){
-  if(!lineElements.length) return;
-  const wrap = document.getElementById('scroll-wrap');
-  const wrapTop = wrap.getBoundingClientRect().top;
-  const wrapH = wrap.clientHeight;
-  // target zone: 28% from top (karaoke-style upper third)
-  const targetY = wrapTop + wrapH * 0.28;
-
-  let bestIdx=-1, bestDist=Infinity;
-  for(let i=0;i<lineElements.length;i++){
-    const r = lineElements[i].getBoundingClientRect();
-    const lineMid = r.top + r.height/2;
-    const dist = Math.abs(lineMid - targetY);
-    if(dist < bestDist){ bestDist=dist; bestIdx=i; }
+  if(!lineElements.length)return;
+  var wrap=document.getElementById('scroll-wrap');
+  var wr=wrap.getBoundingClientRect();
+  var targetY=wr.top+wr.height*0.28;
+  var bestIdx=-1,bestDist=Infinity;
+  for(var i=0;i<lineElements.length;i++){
+    var r=lineElements[i].getBoundingClientRect();
+    var mid=r.top+r.height/2;
+    var dist=Math.abs(mid-targetY);
+    if(dist<bestDist){bestDist=dist;bestIdx=i;}
   }
-  if(bestIdx === activeLine) return;
-  activeLine = bestIdx;
-
-  for(const el of lineElements) el.classList.remove('active-line','next-line');
-
-  if(activeLine >= 0){
+  if(bestIdx===activeLine)return;
+  activeLine=bestIdx;
+  for(var i=0;i<lineElements.length;i++) lineElements[i].classList.remove('active-line','next-line');
+  if(activeLine>=0){
     lineElements[activeLine].classList.add('active-line');
-    // find next line with a chord
-    let ni = activeLine+1;
-    while(ni < lineElements.length){
-      if(lineElements[ni].querySelector('.chord-span:not(.empty)')){
-        lineElements[ni].classList.add('next-line'); break;
-      }
+    var ni=activeLine+1;
+    while(ni<lineElements.length){
+      if(lineElements[ni].querySelector('.chord-span:not(.empty)')){lineElements[ni].classList.add('next-line');break;}
       ni++;
     }
     updateNextChordBar(ni);
   }
 }
-
-function updateNextChordBar(nextLineIdx){
-  const bar = document.getElementById('next-chord-bar');
-  if(nextLineIdx >= lineElements.length){ bar.classList.remove('visible'); return; }
-  const el = lineElements[nextLineIdx];
-  const chords = [...el.querySelectorAll('.chord-span:not(.empty)')].map(c=>c.textContent.trim()).filter(Boolean);
-  if(!chords.length){ bar.classList.remove('visible'); return; }
-  document.getElementById('nxt-chord-text').textContent = chords.slice(0,6).join('  ');
+function updateNextChordBar(ni){
+  var bar=document.getElementById('next-chord-bar');
+  if(ni>=lineElements.length){bar.classList.remove('visible');return;}
+  var spans=lineElements[ni].querySelectorAll('.chord-span:not(.empty)');
+  var chords=[];for(var i=0;i<spans.length;i++) chords.push(spans[i].textContent.trim());
+  if(!chords.length){bar.classList.remove('visible');return;}
+  document.getElementById('nxt-chord-text').textContent=chords.slice(0,6).join('  ');
   bar.classList.add('visible');
 }
-
-// ── タップで行を指定 ──
 function bindLineTap(){
-  lineElements.forEach((el, i) => {
-    el.addEventListener('click', ()=> jumpToLine(i));
-  });
-}
-
-function jumpToLine(idx){
-  if(idx < 0 || idx >= lineElements.length) return;
-  activeLine = idx;
-  // scroll so this line sits at ~28% from top
-  const wrap = document.getElementById('scroll-wrap');
-  const content = document.getElementById('scroll-content');
-  const wrapTop = wrap.getBoundingClientRect().top;
-  const lineTop = lineElements[idx].getBoundingClientRect().top;
-  const targetOffset = wrap.clientHeight * 0.28;
-  const currentOffset = lineTop - wrapTop;
-  scrollY = Math.max(0, scrollY + currentOffset - targetOffset);
-  applyScroll();
-  // if stopped, auto-start scroll
-  if(scrollSpeed === 0 && currentSpeedTarget > 0){
-    toggleScroll();
+  for(var i=0;i<lineElements.length;i++){
+    (function(idx){lineElements[idx].addEventListener('click',function(){jumpToLine(idx);});})(i);
   }
 }
+function jumpToLine(idx){
+  if(idx<0||idx>=lineElements.length)return;
+  var wrap=document.getElementById('scroll-wrap');
+  var lr=lineElements[idx].getBoundingClientRect();
+  var wr=wrap.getBoundingClientRect();
+  scrollY=Math.max(0,scrollY+(lr.top-wr.top)-wr.height*0.28);
+  applyScroll();
+  if(scrollSpeed===0&&currentSpeedTarget>0)toggleScroll();
+}
 
-// ═══════════════════════════════════════════
-//  SCROLL
-// ═══════════════════════════════════════════
-function resetScroll(){scrollY=0;applyScroll();stopScroll()}
+// ==== SCROLL ====
+function resetScroll(){scrollY=0;applyScroll();stopScroll();}
 function applyScroll(){
-  const c=document.getElementById('scroll-content'),w=document.getElementById('scroll-wrap');
-  const max=Math.max(0,c.scrollHeight-w.clientHeight);
+  var c=document.getElementById('scroll-content'),w=document.getElementById('scroll-wrap');
+  var max=Math.max(0,c.scrollHeight-w.clientHeight);
   scrollY=Math.max(0,Math.min(scrollY,max));
-  c.style.transform=`translateY(${-scrollY}px)`;
+  c.style.transform='translateY('+(-scrollY)+'px)';
   updateHighlight();
 }
 function stopScroll(){
-  scrollSpeed=0;cancelAnimationFrame(rafId);rafId=null;lastTs=null;
-  document.getElementById('play-btn').textContent='▶ START';
-  document.getElementById('speed-display').textContent='—';
+  scrollSpeed=0;if(rafId){cancelAnimationFrame(rafId);rafId=null;}lastTs=null;
+  document.getElementById('play-btn').textContent='\u25b6 START';
+  document.getElementById('speed-display').textContent='\u2014';
 }
 function toggleScroll(){
-  if(scrollSpeed>0){stopScroll();return}
+  if(scrollSpeed>0){stopScroll();return;}
   if(!currentSpeedTarget)currentSpeedTarget=40;
   scrollSpeed=currentSpeedTarget;
-  document.getElementById('play-btn').textContent='⏸ STOP';
-  document.getElementById('speed-display').textContent=currentSpeedTarget;
+  document.getElementById('play-btn').textContent='\u23f8 STOP';
+  document.getElementById('speed-display').textContent=String(currentSpeedTarget);
   lastTs=null;rafId=requestAnimationFrame(scrollFrame);
 }
 function scrollFrame(ts){
   if(!lastTs)lastTs=ts;
-  const dt=(ts-lastTs)/1000;lastTs=ts;
+  var dt=(ts-lastTs)/1000;lastTs=ts;
   scrollY+=scrollSpeed*dt;applyScroll();
-  const c=document.getElementById('scroll-content'),w=document.getElementById('scroll-wrap');
-  if(scrollY>=c.scrollHeight-w.clientHeight){stopScroll();return}
+  var c=document.getElementById('scroll-content'),w=document.getElementById('scroll-wrap');
+  if(scrollY>=c.scrollHeight-w.clientHeight){stopScroll();return;}
   rafId=requestAnimationFrame(scrollFrame);
 }
-
-// touch scroll
-let tsy=0,tscy=0;
-document.getElementById('scroll-wrap').addEventListener('touchstart',e=>{
-  tsy=e.touches[0].clientY;tscy=scrollY;if(scrollSpeed>0)stopScroll();
-},{passive:true});
-document.getElementById('scroll-wrap').addEventListener('touchmove',e=>{
-  scrollY=tscy+(tsy-e.touches[0].clientY);applyScroll();
-},{passive:true});
-
+var tsy=0,tscy=0;
+document.getElementById('scroll-wrap').addEventListener('touchstart',function(e){tsy=e.touches[0].clientY;tscy=scrollY;if(scrollSpeed>0)stopScroll();},{passive:true});
+document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){scrollY=tscy+(tsy-e.touches[0].clientY);applyScroll();},{passive:true});
 function changeSpeed(d){
   currentSpeedTarget=Math.max(5,Math.min(200,currentSpeedTarget+d));
-  if(scrollSpeed>0){scrollSpeed=currentSpeedTarget;document.getElementById('speed-display').textContent=currentSpeedTarget}
+  if(scrollSpeed>0){scrollSpeed=currentSpeedTarget;document.getElementById('speed-display').textContent=String(currentSpeedTarget);}
 }
 
-// ═══════════════════════════════════════════
-//  TAP TEMPO  →  auto scroll speed
-// ═══════════════════════════════════════════
+// ==== TAP TEMPO ====
 function tapTempo(){
-  const now=Date.now();
-  // clear taps older than 3s
-  tapTimes=tapTimes.filter(t=>now-t<3000);
+  var now=Date.now();
+  tapTimes=tapTimes.filter(function(t){return now-t<3000;});
   tapTimes.push(now);
-
-  if(tapTimes.length<2){
-    document.getElementById('tap-bpm').textContent='TAP';
-    return;
-  }
-  // average interval
-  const intervals=[];
-  for(let i=1;i<tapTimes.length;i++)intervals.push(tapTimes[i]-tapTimes[i-1]);
-  const avgMs=intervals.reduce((a,b)=>a+b,0)/intervals.length;
-  const bpm=Math.round(60000/avgMs);
-  document.getElementById('tap-bpm').textContent=bpm;
-
-  // map BPM → scroll speed heuristic
-  // at 80bpm a typical line takes ~2 beats → line height ~52px → speed = lineH * bpm/120
-  const lineH=fontSize*2.5;
-  const speed=Math.round(lineH*(bpm/120));
-  currentSpeedTarget=Math.max(10,Math.min(200,speed));
-
-  if(scrollSpeed>0){
-    scrollSpeed=currentSpeedTarget;
-    document.getElementById('speed-display').textContent=currentSpeedTarget;
-  }
+  if(tapTimes.length<2){document.getElementById('tap-bpm').textContent='TAP';return;}
+  var intervals=[];
+  for(var i=1;i<tapTimes.length;i++) intervals.push(tapTimes[i]-tapTimes[i-1]);
+  var avg=intervals.reduce(function(a,b){return a+b;},0)/intervals.length;
+  var bpm=Math.round(60000/avg);
+  document.getElementById('tap-bpm').textContent=String(bpm);
+  currentSpeedTarget=Math.max(10,Math.min(200,Math.round(fontSize*2.5*bpm/120)));
+  if(scrollSpeed>0){scrollSpeed=currentSpeedTarget;document.getElementById('speed-display').textContent=String(currentSpeedTarget);}
 }
 
-// ═══════════════════════════════════════════
-//  KEY / CAPO / FS
-// ═══════════════════════════════════════════
+// ==== KEY/CAPO/FS ====
 function updateKeyDisplay(origKey){
-  const base=(origKey||'C').match(/^[A-G][b#]?/)?.[0]||'C';
+  var base=(origKey||'C').match(/^[A-G][b#]?/);base=base?base[0]:'C';
   document.getElementById('key-display').textContent=transpose===0?(origKey||'C'):tNote(base,transpose);
 }
 function transposeKey(d){
   transpose=((transpose+d)%12+12)%12;if(transpose>6)transpose-=12;
-  if(setlist[currentIndex])setlist[currentIndex].transpose=transpose;
-  render();
+  if(setlist[currentIndex])setlist[currentIndex].transpose=transpose;render();
 }
-function updateCapoDisplay(){
-  document.getElementById('capo-display').textContent=capo>0?capo:'—';
-}
+function updateCapoDisplay(){document.getElementById('capo-display').textContent=capo>0?String(capo):'\u2014';}
 function changeCapo(d){
   capo=Math.max(0,Math.min(11,capo+d));
   if(setlist[currentIndex])setlist[currentIndex].capo=capo;
@@ -721,217 +431,97 @@ function changeCapo(d){
 function changeFS(d){
   fontSize=Math.max(14,Math.min(42,fontSize+d));
   document.documentElement.style.setProperty('--fs',fontSize+'px');
-  document.getElementById('fs-badge').textContent=fontSize;saveState();
+  document.getElementById('fs-badge').textContent=String(fontSize);saveState();
 }
 
-// ═══════════════════════════════════════════
-//  NAVIGATION
-// ═══════════════════════════════════════════
-function goToSong(i){if(i<0||i>=setlist.length)return;currentIndex=i;render()}
-function nextSong(){goToSong((currentIndex+1)%setlist.length)}
-function prevSong(){goToSong((currentIndex-1+setlist.length)%setlist.length)}
+// ==== NAVIGATION ====
+function goToSong(i){if(i<0||i>=setlist.length)return;currentIndex=i;render();}
+function nextSong(){goToSong((currentIndex+1)%setlist.length);}
+function prevSong(){goToSong((currentIndex-1+setlist.length)%setlist.length);}
 
-// ═══════════════════════════════════════════
-//  SETLIST PANEL
-// ═══════════════════════════════════════════
-function openSetlist(){stopScroll();renderSetlistPanel();document.getElementById('setlist-panel').classList.add('open')}
-function closeSetlist(){document.getElementById('setlist-panel').classList.remove('open')}
+// ==== SETLIST ====
+function openSetlist(){stopScroll();renderSetlistPanel();document.getElementById('setlist-panel').classList.add('open');}
+function closeSetlist(){document.getElementById('setlist-panel').classList.remove('open');}
 function renderSetlistPanel(){
-  const list=document.getElementById('setlist-list');
-  list.innerHTML='';
-  if(!setlist.length){
-    list.innerHTML='<div class="setlist-empty">まだ曲がありません。<br>「＋ 手動で追加」または「📷 コード譜を読み込む」で登録してください。</div>';
-    return;
-  }
-  setlist.forEach((song,i)=>{
-    const{title,origCapo,origKey}=parseSong(song.raw);
-    const c=(song.capo!==null&&song.capo!==undefined)?song.capo:origCapo;
-    const item=document.createElement('div');
-    item.className='setlist-item'+(i===currentIndex?' active':'');
-    const num=document.createElement('div');num.className='item-num';num.textContent=i+1;
-    const info=document.createElement('div');info.className='item-info';
-    const t=document.createElement('div');t.className='item-title';t.textContent=title;
-    const meta=document.createElement('div');meta.className='item-meta';
-    let mh=`KEY: ${origKey||'—'}`;
-    if(c>0)mh+=` · <span class="capo-tag">CAPO ${c}</span>`;
-    meta.innerHTML=mh;
+  var list=document.getElementById('setlist-list');list.innerHTML='';
+  if(!setlist.length){list.innerHTML='<div class="setlist-empty">まだ曲がありません。<br>追加してください。</div>';return;}
+  setlist.forEach(function(song,i){
+    var p=parseSong(song.raw);
+    var c=(song.capo!==null&&song.capo!==undefined)?song.capo:p.origCapo;
+    var item=document.createElement('div');item.className='setlist-item'+(i===currentIndex?' active':'');
+    var num=document.createElement('div');num.className='item-num';num.textContent=String(i+1);
+    var info=document.createElement('div');info.className='item-info';
+    var t=document.createElement('div');t.className='item-title';t.textContent=p.title;
+    var meta=document.createElement('div');meta.className='item-meta';
+    meta.innerHTML='KEY: '+(p.origKey||'—')+(c>0?' &middot; <span class="capo-tag">CAPO '+c+'</span>':'');
     info.appendChild(t);info.appendChild(meta);
-    const actions=document.createElement('div');actions.className='item-actions';
-    const mkBtn=(label,cls,cb)=>{
-      const b=document.createElement('button');b.className='icon-btn'+(cls?' '+cls:'');
-      b.textContent=label;b.addEventListener('click',e=>{e.stopPropagation();cb()});return b;
-    };
-    actions.appendChild(mkBtn('✏️','',()=>{closeSetlist();openEditorForIndex(i)}));
-    actions.appendChild(mkBtn('↑','',()=>moveSong(i,-1)));
-    actions.appendChild(mkBtn('↓','',()=>moveSong(i,+1)));
-    actions.appendChild(mkBtn('🗑','del',()=>deleteSong(i)));
+    var actions=document.createElement('div');actions.className='item-actions';
+    function mkBtn(label,cls,cb){var b=document.createElement('button');b.className='icon-btn'+(cls?' '+cls:'');b.textContent=label;b.addEventListener('click',function(e){e.stopPropagation();cb();});return b;}
+    actions.appendChild(mkBtn('✏️','',function(){closeSetlist();openEditorForIndex(i);}));
+    actions.appendChild(mkBtn('↑','',function(){moveSong(i,-1);}));
+    actions.appendChild(mkBtn('↓','',function(){moveSong(i,+1);}));
+    actions.appendChild(mkBtn('🗑','del',function(){deleteSong(i);}));
     item.appendChild(num);item.appendChild(info);item.appendChild(actions);
-    item.addEventListener('click',()=>{goToSong(i);closeSetlist()});
+    item.addEventListener('click',function(){goToSong(i);closeSetlist();});
     list.appendChild(item);
   });
 }
-function moveSong(i,dir){
-  const j=i+dir;if(j<0||j>=setlist.length)return;
-  [setlist[i],setlist[j]]=[setlist[j],setlist[i]];
-  if(currentIndex===i)currentIndex=j;else if(currentIndex===j)currentIndex=i;
-  renderSetlistPanel();saveState();
-}
-function deleteSong(i){
-  if(!confirm(`「${parseSong(setlist[i].raw).title}」を削除しますか？`))return;
-  setlist.splice(i,1);
-  if(currentIndex>=setlist.length)currentIndex=Math.max(0,setlist.length-1);
-  renderSetlistPanel();render();
-}
+function moveSong(i,dir){var j=i+dir;if(j<0||j>=setlist.length)return;var tmp=setlist[i];setlist[i]=setlist[j];setlist[j]=tmp;if(currentIndex===i)currentIndex=j;else if(currentIndex===j)currentIndex=i;renderSetlistPanel();saveState();}
+function deleteSong(i){if(!confirm('「'+parseSong(setlist[i].raw).title+'」を削除しますか？'))return;setlist.splice(i,1);if(currentIndex>=setlist.length)currentIndex=Math.max(0,setlist.length-1);renderSetlistPanel();render();}
 
-// ═══════════════════════════════════════════
-//  EDITOR PANEL
-// ═══════════════════════════════════════════
-function openNewSongEditor(){
-  editingIndex=-1;
-  document.getElementById('editor-title').textContent='📝 新しい曲を追加';
-  document.getElementById('song-input').value=
-`title: 新しい曲
-key: G
-capo: 0
+// ==== EDITOR ====
+function openNewSongEditor(){editingIndex=-1;document.getElementById('editor-title').textContent='新しい曲を追加';document.getElementById('song-input').value="title: 新しい曲\nkey: G\ncapo: 0\n\n[Verse]\n[G]ここに[Em]歌詞を[C]入力[D]\n\n[Chorus]\n[C]コードは[G]直前に[D]";document.getElementById('editor-panel').classList.add('open');}
+function openEditorForIndex(i){editingIndex=i;document.getElementById('editor-title').textContent='曲を編集';document.getElementById('song-input').value=setlist[i].raw;document.getElementById('editor-panel').classList.add('open');}
+function editCurrentSong(){stopScroll();openEditorForIndex(currentIndex);}
+function closeEditor(){document.getElementById('editor-panel').classList.remove('open');}
+function applySong(){var raw=document.getElementById('song-input').value.trim();if(!raw)return;if(editingIndex===-1){setlist.push({raw:raw,transpose:0,capo:null});currentIndex=setlist.length-1;}else{setlist[editingIndex]={raw:raw,transpose:0,capo:null};}closeEditor();render();}
 
-[Verse]
-[G]ここに[Em]歌詞と[C]コードを[D]入力
-[G]してください[Em] [C] [D]
-
-[Chorus]
-[C]コードは[G]歌詞の[Am]直前に[D]書きます
-`;
-  document.getElementById('editor-panel').classList.add('open');
-}
-function openEditorForIndex(i){
-  editingIndex=i;
-  document.getElementById('editor-title').textContent='📝 曲を編集';
-  document.getElementById('song-input').value=setlist[i].raw;
-  document.getElementById('editor-panel').classList.add('open');
-}
-function editCurrentSong(){stopScroll();openEditorForIndex(currentIndex)}
-function closeEditor(){document.getElementById('editor-panel').classList.remove('open')}
-function applySong(){
-  const raw=document.getElementById('song-input').value.trim();
-  if(!raw)return;
-  if(editingIndex===-1){setlist.push({raw,transpose:0,capo:null});currentIndex=setlist.length-1}
-  else setlist[editingIndex]={raw,transpose:0,capo:null};
-  closeEditor();render();
-}
-
-// ═══════════════════════════════════════════
-//  SCAN PANEL  (Image → Claude API)
-// ═══════════════════════════════════════════
-function openScanPanel(){
-  closeSetlist();
-  document.getElementById('scan-panel').classList.add('open');
-}
-function closeScanPanel(){
-  document.getElementById('scan-panel').classList.remove('open');
-}
-function clearScan(){
-  document.getElementById('scan-preview').src='';
-  document.getElementById('scan-preview-wrap').style.display='none';
-  document.getElementById('scan-drop-area').style.display='block';
-  document.getElementById('scan-result').value='';
-  document.getElementById('scan-add-btn').disabled=true;
-  document.getElementById('scan-status-wrap').style.display='none';
-  document.getElementById('scan-overlay').style.display='none';
-}
-
+// ==== SCAN ====
+function openScanPanel(){closeSetlist();document.getElementById('scan-panel').classList.add('open');}
+function closeScanPanel(){document.getElementById('scan-panel').classList.remove('open');}
+function clearScan(){document.getElementById('scan-preview').src='';document.getElementById('scan-preview-wrap').style.display='none';document.getElementById('scan-drop-area').style.display='block';document.getElementById('scan-result').value='';document.getElementById('scan-add-btn').disabled=true;document.getElementById('scan-status-wrap').style.display='none';}
 function handleScanImage(input){
-  const file=input.files[0];
-  if(!file)return;
-  input.value='';
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const dataUrl=e.target.result;
-    const preview=document.getElementById('scan-preview');
-    const previewWrap=document.getElementById('scan-preview-wrap');
-    preview.src=dataUrl;
-    previewWrap.style.display='block';
+  var file=input.files[0];if(!file)return;input.value='';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var dataUrl=e.target.result;
+    document.getElementById('scan-preview').src=dataUrl;
+    document.getElementById('scan-preview-wrap').style.display='block';
     document.getElementById('scan-drop-area').style.display='none';
     document.getElementById('scan-overlay').style.display='flex';
     callClaudeVision(dataUrl);
   };
   reader.readAsDataURL(file);
 }
-
 async function callClaudeVision(dataUrl){
-  const statusWrap=document.getElementById('scan-status-wrap');
-  const statusText=document.getElementById('scan-status-text');
-  const resultArea=document.getElementById('scan-result');
-  const addBtn=document.getElementById('scan-add-btn');
-
+  var statusWrap=document.getElementById('scan-status-wrap');
+  var statusText=document.getElementById('scan-status-text');
+  var resultArea=document.getElementById('scan-result');
+  var addBtn=document.getElementById('scan-add-btn');
   statusWrap.style.display='block';
   statusText.innerHTML='<span class="spinner"></span>AI解析中...';
-  resultArea.value='';
-  addBtn.disabled=true;
-
-  const base64=dataUrl.split(',')[1];
-  const mediaType=dataUrl.split(';')[0].split(':')[1];
-
+  resultArea.value='';addBtn.disabled=true;
+  var base64=dataUrl.split(',')[1];
+  var mediaType=dataUrl.split(';')[0].split(':')[1];
   try{
-    // Vercel Function 経由でAPIキーを安全に使用
-    const resp=await fetch('/api/scan',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({base64,mediaType})
-    });
-    const data=await resp.json();
+    var resp=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64:base64,mediaType:mediaType})});
+    var data=await resp.json();
     document.getElementById('scan-overlay').style.display='none';
-    if(data.error){
-      statusText.textContent='エラー: '+data.error;
-      return;
-    }
+    if(data.error){statusText.textContent='エラー: '+data.error;return;}
     resultArea.value=data.result;
-    statusText.textContent='✓ 解析完了。内容を確認・修正してから追加してください。';
+    statusText.textContent='✓ 解析完了。確認・修正してから追加してください。';
     addBtn.disabled=false;
   }catch(err){
     document.getElementById('scan-overlay').style.display='none';
     statusText.textContent='通信エラー: '+err.message;
   }
 }
+function addScannedSong(){var raw=document.getElementById('scan-result').value.trim();if(!raw)return;setlist.push({raw:raw,transpose:0,capo:null});currentIndex=setlist.length-1;closeScanPanel();clearScan();render();}
 
-function addScannedSong(){
-  const raw=document.getElementById('scan-result').value.trim();
-  if(!raw)return;
-  setlist.push({raw,transpose:0,capo:null});
-  currentIndex=setlist.length-1;
-  closeScanPanel();
-  clearScan();
-  render();
-}
-
-// ═══════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════
-
-window.onerror = function(msg, src, line){
-  const div = document.createElement('div');
-  div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;font-size:12px;padding:8px 12px;z-index:9999;font-family:monospace';
-  div.textContent = `Error: ${msg} (line ${line})`;
-  document.body.appendChild(div);
-};
-
-try {
-  loadState();
-  // SAMPLESが読めなかった場合の保険
-  if(!setlist.length){
-    setlist = SAMPLES.map(raw=>({raw,transpose:0,capo:null}));
-  }
-  render();
-} catch(e) {
-  const div = document.createElement('div');
-  div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;font-size:11px;padding:8px 12px;z-index:9999;font-family:monospace;white-space:pre-wrap';
-  div.textContent = `起動エラー: ${e.message}`;
-  document.body.appendChild(div);
-  // エラーでも曲リストだけは表示する
-  try {
-    setlist = SAMPLES.map(raw=>({raw,transpose:0,capo:null}));
-    render();
-  } catch(e2) {}
-}
+// ==== INIT ====
+window.onerror=function(msg,src,line){var div=document.createElement('div');div.style.cssText='position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;font-size:12px;padding:8px;z-index:9999;font-family:monospace';div.textContent='Error: '+msg+' (line '+line+')';document.body.appendChild(div);};
+loadState();
+render();
 </script>
 </body>
 </html>
