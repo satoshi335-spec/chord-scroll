@@ -194,7 +194,6 @@ input[type=file]{display:none}
   </div>
   <button class="btn" id="karaoke-btn" onclick="toggleKaraokeMode()">&#127908;</button>
   <button class="btn" id="vocal-btn" onclick="toggleVocalMode()" title="ボーカルモード">&#127897; <span id="vocal-indicator">VOCAL</span></button>
-  <button class="btn btn-rec" id="rehearsal-btn" onclick="toggleRehearsalMode()" title="リハーサル録音">&#9679; REC</button>
   <button class="btn" id="edit-btn" onclick="editCurrentSong()">&#9998;</button>
 </div>
 
@@ -227,6 +226,7 @@ input[type=file]{display:none}
     <button class="btn" onclick="changeSpeed(+5)">&#43;</button>
   </div>
   <button class="btn btn-accent" id="play-btn" onclick="toggleScroll()">&#9654; START</button>
+  <button class="btn btn-rec" id="rehearsal-btn" onclick="toggleRehearsalMode()" style="padding:6px 14px;font-size:13px">&#9679; REC</button>
   <button class="btn" onclick="nextSong()">&#9197;</button>
 </div>
 
@@ -488,11 +488,16 @@ function toggleRehearsalMode(){
 function recordRehearsalFrame(){
   if(!rehearsalMode)return;
   var t=(Date.now()-rehearsalStartTime)/1000;
-  // 直前のフレームと速度が変わっていれば記録
-  var last=rehearsalFrames.length>0?rehearsalFrames[rehearsalFrames.length-1]:null;
-  if(!last||Math.abs(last.scrollY-scrollY)>2){
-    rehearsalFrames.push({time:t, scrollY:scrollY, speed:scrollSpeed||currentSpeedTarget});
+  // tsHistoryから速度を平滑計算
+  var spd=0;
+  if(tsHistory&&tsHistory.length>=2){
+    var oldest=tsHistory[0];
+    var newest=tsHistory[tsHistory.length-1];
+    var dy=oldest.y-newest.y; // 上スワイプ（下へスクロール）が正
+    var dtt=(newest.t-oldest.t)/1000;
+    if(dtt>0&&dy>0) spd=Math.min(200,Math.round(dy/dtt));
   }
+  rehearsalFrames.push({time:t, scrollY:scrollY, speed:spd});
 }
 
 function saveRehearsal(){
@@ -519,22 +524,22 @@ function cancelRehearsal(){
 function applyRehearsalPlayback(elapsed){
   var frames=loadRehearsalData(currentIndex);
   if(!frames||!frames.length)return false;
-  // elapsedに対応するフレームを探して補間
-  if(rehearsalPlayIndex>=frames.length-1){
-    stopScroll(); return true;
-  }
-  while(rehearsalPlayIndex<frames.length-1 && frames[rehearsalPlayIndex+1].time<=elapsed){
+  if(rehearsalPlayIndex>=frames.length-1){stopScroll();return true;}
+  // elapsedに対応するフレームへ進める
+  while(rehearsalPlayIndex<frames.length-1&&frames[rehearsalPlayIndex+1].time<=elapsed){
     rehearsalPlayIndex++;
   }
   var f=frames[rehearsalPlayIndex];
   var f2=rehearsalPlayIndex+1<frames.length?frames[rehearsalPlayIndex+1]:null;
-  if(f2){
-    var t=(elapsed-f.time)/(f2.time-f.time);
-    t=Math.max(0,Math.min(1,t));
-    scrollY=f.scrollY+(f2.scrollY-f.scrollY)*t;
-    scrollSpeed=f.speed+(f2.speed-f.speed)*t;
+  if(f2&&f2.time>f.time){
+    var ratio=(elapsed-f.time)/(f2.time-f.time);
+    ratio=Math.max(0,Math.min(1,ratio));
+    scrollY=f.scrollY+(f2.scrollY-f.scrollY)*ratio;
+    // 速度は上限200・下限0に制限
+    scrollSpeed=Math.max(0,Math.min(200,f.speed+(f2.speed-f.speed)*ratio));
   } else {
-    scrollY=f.scrollY; scrollSpeed=f.speed;
+    scrollY=f.scrollY;
+    scrollSpeed=Math.max(0,Math.min(200,f.speed));
   }
   applyScroll();
   return true;
@@ -715,29 +720,37 @@ function scrollFrame(ts){
   if(checkWaitBlocks())return;
   rafId=requestAnimationFrame(scrollFrame);
 }
-var tsy=0,tscy=0,tsLastY=0,tsLastT=0;
+// タッチスクロール（慣性なし・速度平滑化）
+var tsy=0, tscy=0;
+var tsHistory=[]; // [{y, t}] 直近の動きを保持
+
 document.getElementById('scroll-wrap').addEventListener('touchstart',function(e){
-  tsy=e.touches[0].clientY;tscy=scrollY;tsLastY=tsy;tsLastT=Date.now();
-  if(scrollSpeed>0&&!rehearsalMode)stopScroll();
+  tsy=e.touches[0].clientY;
+  tscy=scrollY;
+  tsHistory=[{y:tsy, t:Date.now()}];
+  if(scrollSpeed>0&&!rehearsalMode) stopScroll();
 },{passive:true});
+
 document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){
   var cy=e.touches[0].clientY;
-  var dy=tsy-cy;
-  scrollY=tscy+dy;
-  // 速度を計算
+  scrollY=tscy+(tsy-cy);
   var now=Date.now();
-  var dt2=(now-tsLastT)/1000;
-  if(dt2>0.05){
-    var spd=Math.abs((cy-tsLastY)/dt2);
-    var dir=(cy<tsLastY)?1:-1;
-    currentSpeedTarget=Math.max(0,Math.min(200,Math.round(spd)));
-    if(rehearsalMode){ scrollSpeed=dir>0?currentSpeedTarget:-currentSpeedTarget; recordRehearsalFrame(); }
-    tsLastY=cy;tsLastT=now;
-  }
+  tsHistory.push({y:cy, t:now});
+  // 直近100ms以内のみ保持
+  tsHistory=tsHistory.filter(function(h){return now-h.t<100;});
+  if(rehearsalMode) recordRehearsalFrame();
   applyScroll();
 },{passive:true});
-document.getElementById('scroll-wrap').addEventListener('touchend',function(){
-  if(rehearsalMode) recordRehearsalFrame();
+
+document.getElementById('scroll-wrap').addEventListener('touchend',function(e){
+  if(rehearsalMode){
+    // 指を離したら速度0として記録（慣性スクロールしない）
+    scrollSpeed=0;
+    recordRehearsalFrame();
+    return;
+  }
+  // 通常モード：慣性なし（即停止）
+  tsHistory=[];
 },{passive:true});
 function changeSpeed(d){
   currentSpeedTarget=Math.max(5,Math.min(200,currentSpeedTarget+d));
