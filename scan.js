@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -9,25 +8,24 @@ export default async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
 
-  const { base64, mediaType } = req.body;
-  if (!base64 || !mediaType) return res.status(400).json({ error: 'Missing image data' });
+  const { base64, mediaType, fileType } = req.body;
+  if (!base64 || !mediaType) return res.status(400).json({ error: 'Missing data' });
 
-  const prompt = `この画像はギターのコード譜です。コードと歌詞を以下の形式のテキストに変換してください。
+  const prompt = 'このファイルはギターのコード譜です。コードと歌詞を以下の形式のテキストに変換してください。\n\n出力形式（必ずこの形式のみ）:\ntitle: 曲名（わかれば）\nkey: キー（わかれば、例: G）\ncapo: カポ番号（わかれば）\n\n[セクション名]\n[コード]歌詞[コード]歌詞...\n\nルール:\n- コードは歌詞の直前に [コード] 形式で埋め込む\n- セクション（Verse/Chorus等）は [ ] で囲む\n- 歌詞がなくコードのみの行は [G] [Em] [C] [D] のように並べる\n- 複数ページある場合はすべて変換する\n- 不明な部分は省略してよい\n- 余計な説明文は不要。変換結果のみ出力する';
 
-出力形式（必ずこの形式のみ）:
-title: 曲名（わかれば）
-key: キー（わかれば、例: G）
-capo: カポ番号（わかれば）
-
-[セクション名]
-[コード]歌詞[コード]歌詞...
-
-ルール:
-- コードは歌詞の直前に [コード] 形式で埋め込む
-- セクション（Verse/Chorus等）は [ ] で囲む
-- 歌詞がなくコードのみの行は [G] [Em] [C] [D] のように並べる
-- 不明な部分は省略してよい
-- 余計な説明文は不要。変換結果のみ出力する`;
+  // PDFはdocumentタイプ、画像はimageタイプ
+  let contentBlock;
+  if (fileType === 'pdf') {
+    contentBlock = {
+      type: 'document',
+      source: { type: 'base64', media_type: 'application/pdf', data: base64 }
+    };
+  } else {
+    contentBlock = {
+      type: 'image',
+      source: { type: 'base64', media_type: mediaType, data: base64 }
+    };
+  }
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -39,11 +37,11 @@ capo: カポ番号（わかれば）
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
+        max_tokens: 2000,
         messages: [{
           role: 'user',
           content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            contentBlock,
             { type: 'text', text: prompt }
           ]
         }]
