@@ -199,9 +199,17 @@ input[type=file]{display:none}
 
 <div id="rehearsal-bar">
   <div id="rehearsal-dot"></div>
-  <div id="rehearsal-info">REC中 - スワイプで速度を調整して記録</div>
-  <button class="btn" onclick="saveRehearsal()" style="font-size:11px;padding:3px 8px">&#10003; 保存</button>
-  <button class="btn" onclick="cancelRehearsal()" style="font-size:11px;padding:3px 8px">&#10005;</button>
+  <div id="rehearsal-info">REC中 - 曲に合わせてスワイプして調整</div>
+  <button class="btn" onclick="saveRehearsal()" style="font-size:11px;padding:4px 10px">&#10003; 保存</button>
+  <button class="btn" onclick="cancelRehearsal()" style="font-size:11px;padding:4px 10px">&#10005;</button>
+</div>
+
+<!-- RECエントリーボタン（画面固定・大きめ） -->
+<div id="rec-entry" style="position:fixed;bottom:60px;right:14px;z-index:150;pointer-events:all">
+  <button id="rehearsal-btn" onclick="toggleRehearsalMode()"
+    style="background:#ff6432;color:#fff;border:none;border-radius:50%;width:52px;height:52px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,0.5);touch-action:manipulation;-webkit-user-select:none">
+    &#9679;<br><span style="font-size:9px;letter-spacing:.04em">REC</span>
+  </button>
 </div>
 
 <div id="next-chord-bar">
@@ -226,7 +234,6 @@ input[type=file]{display:none}
     <button class="btn" onclick="changeSpeed(+5)">&#43;</button>
   </div>
   <button class="btn btn-accent" id="play-btn" onclick="toggleScroll()">&#9654; START</button>
-  <button class="btn btn-rec" id="rehearsal-btn" onclick="toggleRehearsalMode()" style="padding:6px 14px;font-size:13px">&#9679; REC</button>
   <button class="btn" onclick="nextSong()">&#9197;</button>
 </div>
 
@@ -548,13 +555,14 @@ function applyRehearsalPlayback(elapsed){
 // リハーサルデータ有無バッジを更新
 function updateRehearsalBadge(){
   var btn=document.getElementById('rehearsal-btn');
+  if(!btn)return;
   var frames=loadRehearsalData(currentIndex);
   if(frames&&frames.length>0){
-    btn.textContent='&#9654; PLAY'; btn.innerHTML='&#9654; PLAY';
-    btn.style.background='#2a6e40'; btn.style.color='#7fe0b8';
+    btn.innerHTML='&#9654;<br><span style="font-size:9px;letter-spacing:.04em">PLAY</span>';
+    btn.style.background='#2a6e40';
   } else {
-    btn.innerHTML='&#9679; REC';
-    btn.style.background=''; btn.style.color='';
+    btn.innerHTML='&#9679;<br><span style="font-size:9px;letter-spacing:.04em">REC</span>';
+    btn.style.background='#ff6432';
   }
 }
 
