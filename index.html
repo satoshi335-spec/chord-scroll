@@ -583,15 +583,22 @@ async function callClaudeVision(dataUrl, fileType){
   var resultArea=document.getElementById('scan-result');
   var addBtn=document.getElementById('scan-add-btn');
   statusWrap.style.display='block';
-  statusText.innerHTML='<span class="spinner"></span>AI解析中...';
+  statusText.innerHTML='<span class="spinner"></span>AI解析中... (大きいファイルは時間がかかります)';
   resultArea.value='';addBtn.disabled=true;
   var base64=dataUrl.split(',')[1];
   var mediaType=dataUrl.split(';')[0].split(':')[1];
   var type=fileType||'image';
   try{
-    var resp=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64:base64,mediaType:mediaType,fileType:type})});
-    var data=await resp.json();
+    var resp=await fetch('/api/scan',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({base64:base64,mediaType:mediaType,fileType:type})
+    });
+    var responseText=await resp.text();
     document.getElementById('scan-overlay').style.display='none';
+    var data;
+    try{ data=JSON.parse(responseText); }
+    catch(pe){ statusText.textContent='レスポンスエラー: '+responseText.slice(0,100); return; }
     if(data.error){statusText.textContent='エラー: '+data.error;return;}
     resultArea.value=data.result;
     statusText.textContent='✓ 解析完了。確認・修正してから追加してください。';
