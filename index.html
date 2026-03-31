@@ -691,6 +691,7 @@ function stopScroll(){
   document.getElementById('speed-display').textContent='\u2014';
 }
 function toggleScroll(){
+  if(rehearsalMode)return; // REC中はSTART/STOP無効
   if(scrollSpeed>0){stopScroll();return;}
   var frames=loadRehearsalData(currentIndex);
   if(frames&&frames.length>0&&!rehearsalMode){
@@ -734,37 +735,48 @@ var tsy=0, tscy=0;
 var tsHistory=[]; // [{y, t}] 直近の動きを保持
 
 document.getElementById('scroll-wrap').addEventListener('touchstart',function(e){
-  // RECボタン上のタッチは無視
-  var recBtn=document.getElementById('rehearsal-btn');
-  if(recBtn&&recBtn.contains(e.target))return;
+  if(rehearsalMode)return;
   var recEntry=document.getElementById('rec-entry');
   if(recEntry&&recEntry.contains(e.target))return;
   tsy=e.touches[0].clientY;
   tscy=scrollY;
   tsHistory=[{y:tsy, t:Date.now()}];
-  if(scrollSpeed>0&&!rehearsalMode) stopScroll();
+  if(scrollSpeed>0) stopScroll();
 },{passive:true});
 
 document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){
   var cy=e.touches[0].clientY;
+  if(rehearsalMode){
+    // REC中：スワイプでスクロール位置を動かして記録
+    scrollY=tscy+(tsy-cy);
+    tsHistory.push({y:cy, t:Date.now()});
+    tsHistory=tsHistory.filter(function(h){return Date.now()-h.t<100;});
+    recordRehearsalFrame();
+    applyScroll();
+    return;
+  }
   scrollY=tscy+(tsy-cy);
-  var now=Date.now();
-  tsHistory.push({y:cy, t:now});
-  // 直近100ms以内のみ保持
-  tsHistory=tsHistory.filter(function(h){return now-h.t<100;});
-  if(rehearsalMode) recordRehearsalFrame();
+  tsHistory.push({y:cy, t:Date.now()});
+  tsHistory=tsHistory.filter(function(h){return Date.now()-h.t<100;});
   applyScroll();
 },{passive:true});
 
 document.getElementById('scroll-wrap').addEventListener('touchend',function(e){
   if(rehearsalMode){
-    // 指を離したら速度0として記録（慣性スクロールしない）
+    // REC中：指を離したら速度0で記録。STARTは起動しない
     scrollSpeed=0;
     recordRehearsalFrame();
     return;
   }
-  // 通常モード：慣性なし（即停止）
   tsHistory=[];
+},{passive:true});
+
+// REC中のtouchstartも別途捕捉（スクロール開始位置を記録）
+document.getElementById('scroll-wrap').addEventListener('touchstart',function(e){
+  if(!rehearsalMode)return;
+  tsy=e.touches[0].clientY;
+  tscy=scrollY;
+  tsHistory=[{y:tsy, t:Date.now()}];
 },{passive:true});
 function changeSpeed(d){
   currentSpeedTarget=Math.max(5,Math.min(200,currentSpeedTarget+d));
