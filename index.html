@@ -38,15 +38,65 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
 .nxt-chord{font-size:16px;font-weight:600}
 #scroll-wrap{flex:1;min-height:0;overflow:hidden;position:relative}
 #scroll-content{padding:14px 16px 110px;will-change:transform;transform:translateY(0)}
+
+/* 横向き: topbarを1行に収める */
+@media (orientation:landscape){
+  #topbar{flex-wrap:nowrap;padding:3px 8px;gap:4px}
+  #song-title{font-size:13px;min-width:40px;max-width:120px}
+  .ctrl-label{display:none}
+  .btn{padding:3px 7px;font-size:11px}
+  #setlist-btn{width:28px;height:28px;font-size:14px}
+  #key-display{font-size:12px;min-width:22px}
+  #capo-display{font-size:11px;min-width:18px}
+  #fs-badge{font-size:10px;min-width:18px}
+  #scroll-content{padding:10px 14px 80px}
+  #overlay{padding:10px 12px 8px;gap:8px}
+}
+
+/* 縦向き: topbarを2行に */
+@media (orientation:portrait){
+  #topbar{flex-wrap:wrap;padding:5px 8px;gap:5px}
+  #setlist-btn{order:1}
+  #song-title{order:2;flex:1;font-size:15px}
+  #karaoke-btn{order:3}
+  #edit-btn{order:4}
+  .ctrl-group{order:5}
+  #overlay{padding:14px 10px 10px;gap:8px}
+  #tap-btn{min-width:52px;padding:5px 8px}
+}
+
 .section-label{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin:14px 0 4px;opacity:.7}
-.song-line{display:flex;flex-wrap:wrap;align-items:flex-end;margin-bottom:1px;line-height:1;padding:6px 8px;border-radius:6px;border-left:3px solid transparent;transition:background .25s,border-color .25s;cursor:pointer;touch-action:manipulation}
+.song-line{
+  display:flex;flex-direction:row;flex-wrap:wrap;
+  align-items:flex-end;
+  margin-bottom:2px;line-height:1;
+  padding:6px 8px;border-radius:6px;
+  border-left:3px solid transparent;
+  transition:background .25s,border-color .25s;
+  cursor:pointer;touch-action:manipulation;
+}
 .song-line.active-line{background:var(--hl-bg);border-left-color:var(--hl-border)}
 .song-line.next-line{background:var(--next-bg);border-left-color:var(--next-border)}
-.word{display:inline-flex;flex-direction:column;align-items:flex-start;margin-right:2px;margin-bottom:10px}
-.chord-span{font-family:'Fira Code',monospace;font-size:calc(var(--fs)*0.68);font-weight:600;color:var(--chord);height:calc(var(--fs)*0.82);line-height:1;white-space:nowrap;padding-bottom:2px}
+/* word = コード+歌詞の縦ペア */
+.word{
+  display:inline-flex;flex-direction:column;align-items:flex-start;
+  margin-right:0;margin-bottom:8px;
+}
+.chord-span{
+  font-family:'Fira Code',monospace;
+  font-size:calc(var(--fs)*0.65);font-weight:600;
+  color:var(--chord);
+  min-height:calc(var(--fs)*0.8);
+  line-height:1;white-space:nowrap;
+  padding-bottom:1px;
+  display:block;
+}
 .chord-span.empty{visibility:hidden}
 .song-line.active-line .chord-span:not(.empty){color:#ffe066}
-.lyric-span{font-size:var(--fs);color:var(--lyric);white-space:pre;line-height:1.2}
+.lyric-span{
+  font-size:var(--fs);color:var(--lyric);
+  white-space:pre;line-height:1.2;display:block;
+}
 .song-line.active-line .lyric-span{color:#fff;font-weight:700}
 .song-line.next-line .lyric-span{color:#c0c0d8}
 .line-sep{width:100%;height:1px;background:var(--border);margin:4px 0 8px;opacity:.3}
@@ -110,7 +160,7 @@ input[type=file]{display:none}
     <button class="btn" onclick="changeFS(+2)">A+</button>
   </div>
   <button class="btn" id="karaoke-btn" onclick="toggleKaraokeMode()">&#127908;</button>
-  <button class="btn" onclick="editCurrentSong()">&#9998;</button>
+  <button class="btn" id="edit-btn" onclick="editCurrentSong()">&#9998;</button>
 </div>
 
 <div id="next-chord-bar">
