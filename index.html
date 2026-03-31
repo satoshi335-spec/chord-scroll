@@ -235,23 +235,26 @@ input[type=file]{display:none}
     <button class="btn" onclick="closeScanPanel()">&#10005; 閉じる</button>
   </div>
   <div class="panel-body">
-    <div style="display:flex;gap:10px;width:100%;max-width:480px">
+    <div style="display:flex;gap:8px;width:100%;max-width:480px;flex-wrap:wrap">
       <button class="btn btn-blue" style="flex:1;padding:10px;font-size:13px" onclick="document.getElementById('cam-input').click()">&#128247; カメラで撮影</button>
       <button class="btn" style="flex:1;padding:10px;font-size:13px" onclick="document.getElementById('file-input').click()">&#128444; 画像を選択</button>
+      <button class="btn btn-green" style="flex:1;padding:10px;font-size:13px" onclick="document.getElementById('pdf-input').click()">&#128196; PDFを選択</button>
     </div>
-    <input type="file" id="cam-input" accept="image/*" capture="environment" onchange="handleScanImage(this)">
-    <input type="file" id="file-input" accept="image/*" onchange="handleScanImage(this)">
+    <input type="file" id="cam-input" accept="image/*" capture="environment" onchange="handleScanFile(this,'image')">
+    <input type="file" id="file-input" accept="image/*" onchange="handleScanFile(this,'image')">
+    <input type="file" id="pdf-input" accept="application/pdf" onchange="handleScanFile(this,'pdf')">
     <div id="scan-preview-wrap" style="width:100%;max-width:480px;position:relative;display:none">
       <img id="scan-preview" alt="preview" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;border:1px solid var(--border)">
-      <button onclick="clearScan()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;cursor:pointer">&#10005; 再撮影</button>
+      <div id="scan-pdf-badge" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;color:var(--lyric);font-size:13px">&#128196; <span id="scan-pdf-name"></span></div>
+      <button onclick="clearScan()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.7);border:none;color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;cursor:pointer">&#10005; 再選択</button>
       <div id="scan-overlay" style="display:none;position:absolute;inset:0;background:rgba(13,13,15,0.75);border-radius:8px;flex-direction:column;align-items:center;justify-content:center;gap:8px">
         <div class="spinner" style="width:28px;height:28px;border-width:3px"></div>
         <div style="color:var(--chord);font-size:13px;font-family:'Fira Code',monospace">AI解析中...</div>
       </div>
     </div>
     <div id="scan-drop-area" onclick="document.getElementById('file-input').click()">
-      ここをタップして画像を選択<br>または「カメラで撮影」<br>
-      <small style="opacity:.5">コード譜・手書き譜・印刷譜 対応</small>
+      ここをタップして画像を選択<br>または「カメラで撮影」「PDFを選択」<br>
+      <small style="opacity:.5">コード譜・手書き譜・印刷譜・PDF 対応</small>
     </div>
     <div id="scan-status-wrap" style="display:none;width:100%;max-width:480px">
       <span class="scan-status" id="scan-status-text"></span>
@@ -538,21 +541,43 @@ function applySong(){var raw=document.getElementById('song-input').value.trim();
 // ==== SCAN ====
 function openScanPanel(){closeSetlist();document.getElementById('scan-panel').classList.add('open');}
 function closeScanPanel(){document.getElementById('scan-panel').classList.remove('open');}
-function clearScan(){document.getElementById('scan-preview').src='';document.getElementById('scan-preview-wrap').style.display='none';document.getElementById('scan-drop-area').style.display='block';document.getElementById('scan-result').value='';document.getElementById('scan-add-btn').disabled=true;document.getElementById('scan-status-wrap').style.display='none';}
-function handleScanImage(input){
+function clearScan(){
+  document.getElementById('scan-preview').src='';
+  document.getElementById('scan-preview').style.display='block';
+  document.getElementById('scan-pdf-badge').style.display='none';
+  document.getElementById('scan-preview-wrap').style.display='none';
+  document.getElementById('scan-drop-area').style.display='block';
+  document.getElementById('scan-result').value='';
+  document.getElementById('scan-add-btn').disabled=true;
+  document.getElementById('scan-status-wrap').style.display='none';
+}
+function handleScanFile(input, type){
   var file=input.files[0];if(!file)return;input.value='';
   var reader=new FileReader();
   reader.onload=function(e){
     var dataUrl=e.target.result;
-    document.getElementById('scan-preview').src=dataUrl;
-    document.getElementById('scan-preview-wrap').style.display='block';
+    var previewWrap=document.getElementById('scan-preview-wrap');
+    previewWrap.style.display='block';
     document.getElementById('scan-drop-area').style.display='none';
+    if(type==='pdf'){
+      // PDFはプレビューなし、名前だけ表示
+      document.getElementById('scan-preview').style.display='none';
+      document.getElementById('scan-pdf-badge').style.display='block';
+      document.getElementById('scan-pdf-name').textContent=file.name;
+    } else {
+      document.getElementById('scan-preview').src=dataUrl;
+      document.getElementById('scan-preview').style.display='block';
+      document.getElementById('scan-pdf-badge').style.display='none';
+    }
     document.getElementById('scan-overlay').style.display='flex';
-    callClaudeVision(dataUrl);
+    callClaudeVision(dataUrl, type);
   };
   reader.readAsDataURL(file);
 }
-async function callClaudeVision(dataUrl){
+// 後方互換
+function handleScanImage(input){handleScanFile(input,'image');}
+
+async function callClaudeVision(dataUrl, fileType){
   var statusWrap=document.getElementById('scan-status-wrap');
   var statusText=document.getElementById('scan-status-text');
   var resultArea=document.getElementById('scan-result');
@@ -562,8 +587,9 @@ async function callClaudeVision(dataUrl){
   resultArea.value='';addBtn.disabled=true;
   var base64=dataUrl.split(',')[1];
   var mediaType=dataUrl.split(';')[0].split(':')[1];
+  var type=fileType||'image';
   try{
-    var resp=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64:base64,mediaType:mediaType})});
+    var resp=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64:base64,mediaType:mediaType,fileType:type})});
     var data=await resp.json();
     document.getElementById('scan-overlay').style.display='none';
     if(data.error){statusText.textContent='エラー: '+data.error;return;}
