@@ -39,18 +39,25 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
 #scroll-wrap{flex:1;min-height:0;overflow:hidden;position:relative}
 #scroll-content{padding:14px 16px 110px;will-change:transform;transform:translateY(0)}
 
-/* 横向き: topbarを1行に収める */
+/* 横向き: 大きい文字・画面幅フル活用 */
 @media (orientation:landscape){
-  #topbar{flex-wrap:nowrap;padding:3px 8px;gap:4px}
-  #song-title{font-size:13px;min-width:40px;max-width:120px}
+  :root{--fs:30px}
+  #topbar{flex-wrap:nowrap;padding:2px 8px;gap:4px;min-height:0}
+  #song-title{font-size:13px;min-width:40px;max-width:100px}
   .ctrl-label{display:none}
-  .btn{padding:3px 7px;font-size:11px}
-  #setlist-btn{width:28px;height:28px;font-size:14px}
-  #key-display{font-size:12px;min-width:22px}
-  #capo-display{font-size:11px;min-width:18px}
-  #fs-badge{font-size:10px;min-width:18px}
-  #scroll-content{padding:10px 14px 80px}
-  #overlay{padding:10px 12px 8px;gap:8px}
+  .btn{padding:2px 7px;font-size:11px}
+  #setlist-btn{width:26px;height:26px;font-size:13px}
+  #key-display{font-size:12px;min-width:20px}
+  #capo-display{font-size:11px;min-width:16px}
+  #fs-badge{font-size:10px;min-width:16px}
+  #next-chord-bar{padding:2px 12px;font-size:11px}
+  .nxt-chord{font-size:18px}
+  #scroll-content{padding:6px 10px 70px}
+  #overlay{padding:6px 12px 6px;gap:8px}
+  .song-line{padding:2px 6px}
+  .word{margin-bottom:2px}
+  .section-label{margin:8px 0 2px;font-size:10px}
+  .line-sep{margin:2px 0 4px}
 }
 
 /* 縦向き: topbarを2行に */
@@ -69,8 +76,8 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
 .song-line{
   display:flex;flex-direction:row;flex-wrap:wrap;
   align-items:flex-end;
-  margin-bottom:2px;line-height:1;
-  padding:6px 8px;border-radius:6px;
+  margin-bottom:0;line-height:1;
+  padding:4px 8px;border-radius:6px;
   border-left:3px solid transparent;
   transition:background .25s,border-color .25s;
   cursor:pointer;touch-action:manipulation;
@@ -80,26 +87,27 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
 /* word = コード+歌詞の縦ペア */
 .word{
   display:inline-flex;flex-direction:column;align-items:flex-start;
-  margin-right:0;margin-bottom:8px;
+  margin-right:0;margin-bottom:4px;
 }
 .chord-span{
   font-family:'Fira Code',monospace;
-  font-size:calc(var(--fs)*0.65);font-weight:600;
+  font-size:calc(var(--fs)*0.6);font-weight:600;
   color:var(--chord);
-  min-height:calc(var(--fs)*0.8);
   line-height:1;white-space:nowrap;
-  padding-bottom:1px;
+  padding-bottom:0;
+  height:calc(var(--fs)*0.7);
   display:block;
+  overflow:hidden;
 }
 .chord-span.empty{visibility:hidden}
 .song-line.active-line .chord-span:not(.empty){color:#ffe066}
 .lyric-span{
   font-size:var(--fs);color:var(--lyric);
-  white-space:pre;line-height:1.2;display:block;
+  white-space:pre;line-height:1.15;display:block;
 }
 .song-line.active-line .lyric-span{color:#fff;font-weight:700}
 .song-line.next-line .lyric-span{color:#c0c0d8}
-.line-sep{width:100%;height:1px;background:var(--border);margin:4px 0 8px;opacity:.3}
+.line-sep{width:100%;height:1px;background:var(--border);margin:3px 0 6px;opacity:.3}
 #overlay{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--ui-bg) 50%);padding:18px 14px 12px;display:flex;justify-content:center;align-items:center;gap:10px;pointer-events:none;flex-wrap:wrap}
 #overlay>*{pointer-events:all;touch-action:manipulation}
 #tap-btn{background:#2a1a00;border:2px solid var(--chord);color:var(--chord);font-family:'Fira Code',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:60px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
