@@ -16,11 +16,18 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-serif;
-  overflow:hidden;height:100dvh;width:100dvw;display:flex;flex-direction:column}
+  overflow:hidden;height:100vh;height:100dvh;width:100vw;width:100dvw;display:flex;flex-direction:column}
 
 /* ── TOP BAR ── */
 #topbar{display:flex;align-items:center;gap:6px;padding:4px 10px;
   background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+#topbar .btn{pointer-events:all}
+#topbar .ctrl-group *{pointer-events:all}
+/* 縦向き時：曲名を全幅に */
+@media (orientation:portrait){
+  #song-title{order:-1;width:100%;flex-basis:100%;font-size:16px;padding:2px 0}
+  #topbar{padding:6px 10px}
+}
 #setlist-btn{background:none;border:1px solid var(--border);color:var(--chord);
   font-size:17px;width:32px;height:32px;border-radius:6px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -59,7 +66,7 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
 #next-chord-bar .nxt-chord{font-size:16px;font-weight:600}
 
 /* ── SCROLL AREA ── */
-#scroll-wrap{flex:1;overflow:hidden;position:relative}
+#scroll-wrap{flex:1;overflow:hidden;position:relative;min-height:0}
 #scroll-content{padding:12px 16px 100px;will-change:transform}
 
 /* ── SONG BLOCKS ── */
@@ -104,6 +111,9 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
   pointer-events:none;flex-wrap:wrap
 }
 #overlay>*{pointer-events:all}
+#overlay .btn{pointer-events:all}
+#overlay .ctrl-group{pointer-events:all}
+#overlay .ctrl-group *{pointer-events:all}
 
 /* TAP TEMPO button — big touch target */
 #tap-btn{
@@ -248,6 +258,7 @@ input[type=file]{display:none}
   <div id="setlist-footer">
     <button class="btn btn-green" style="flex:1" onclick="openNewSongEditor()">＋ 手動で追加</button>
     <button class="btn btn-blue" style="flex:1" onclick="openScanPanel()">📷 コード譜を読み込む</button>
+    <button class="btn" style="color:var(--lyric-dim);font-size:11px" onclick="resetAllData()">🔄 リセット</button>
   </div>
 </div>
 
@@ -396,14 +407,31 @@ function saveState(){
 function loadState(){
   try{
     const sl=localStorage.getItem('cs_setlist');
-    if(sl)setlist=JSON.parse(sl);
+    if(sl){
+      const parsed=JSON.parse(sl);
+      // 壊れたデータチェック：配列かつ各要素にrawがあること
+      if(Array.isArray(parsed) && parsed.every(s=>s && typeof s.raw==='string')){
+        setlist=parsed;
+      }
+    }
     const ci=localStorage.getItem('cs_idx');
     if(ci!==null)currentIndex=parseInt(ci)||0;
     const fs=localStorage.getItem('cs_fs');
     if(fs)fontSize=parseInt(fs)||24;
-  }catch(e){}
+  }catch(e){
+    // localStorageが壊れていたらクリア
+    try{localStorage.clear();}catch(e2){}
+  }
   if(!setlist.length)setlist=SAMPLES.map(raw=>({raw,transpose:0,capo:null}));
   currentIndex=Math.min(currentIndex,Math.max(0,setlist.length-1));
+}
+
+function resetAllData(){
+  if(!confirm('全データをリセットしてサンプル曲に戻しますか？'))return;
+  try{localStorage.clear();}catch(e){}
+  setlist=SAMPLES.map(raw=>({raw,transpose:0,capo:null}));
+  currentIndex=0; transpose=0; capo=0; fontSize=24;
+  render();
 }
 
 // ═══════════════════════════════════════════
@@ -879,22 +907,30 @@ function addScannedSong(){
 //  INIT
 // ═══════════════════════════════════════════
 
-// エラーをページに表示（デバッグ用）
-window.onerror = function(msg, src, line, col, err){
+window.onerror = function(msg, src, line){
   const div = document.createElement('div');
-  div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;font-size:12px;padding:8px 12px;z-index:9999;font-family:monospace;white-space:pre-wrap;word-break:break-all';
-  div.textContent = `JS Error: ${msg}\nLine: ${line}`;
+  div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;font-size:12px;padding:8px 12px;z-index:9999;font-family:monospace';
+  div.textContent = `Error: ${msg} (line ${line})`;
   document.body.appendChild(div);
 };
 
 try {
   loadState();
+  // SAMPLESが読めなかった場合の保険
+  if(!setlist.length){
+    setlist = SAMPLES.map(raw=>({raw,transpose:0,capo:null}));
+  }
   render();
 } catch(e) {
   const div = document.createElement('div');
-  div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;font-size:12px;padding:8px 12px;z-index:9999;font-family:monospace;white-space:pre-wrap;word-break:break-all';
-  div.textContent = `起動エラー: ${e.message}\n${e.stack||''}`;
+  div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;font-size:11px;padding:8px 12px;z-index:9999;font-family:monospace;white-space:pre-wrap';
+  div.textContent = `起動エラー: ${e.message}`;
   document.body.appendChild(div);
+  // エラーでも曲リストだけは表示する
+  try {
+    setlist = SAMPLES.map(raw=>({raw,transpose:0,capo:null}));
+    render();
+  } catch(e2) {}
 }
 </script>
 </body>
