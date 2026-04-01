@@ -18,58 +18,64 @@
 html,body{height:100%;width:100%}
 body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-serif;overflow:hidden;display:flex;flex-direction:column}
 #topbar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
-#song-title{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:.08em;color:var(--chord);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;min-width:60px}
-.ctrl-group{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.ctrl-label{font-size:9px;color:var(--lyric-dim);letter-spacing:.05em;text-transform:uppercase}
-.btn{background:var(--border);border:none;color:var(--lyric);font-size:12px;padding:5px 9px;border-radius:4px;cursor:pointer;font-family:'Fira Code',monospace;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#song-title{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:.08em;color:var(--chord);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;min-width:60px}
+.ctrl-group{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.ctrl-label{font-size:10px;color:var(--lyric-dim);letter-spacing:.05em;text-transform:uppercase}
+.btn{background:var(--border);border:none;color:var(--lyric);font-size:14px;padding:8px 13px;border-radius:6px;cursor:pointer;font-family:'Fira Code',monospace;user-select:none;-webkit-user-select:none;touch-action:manipulation;min-height:38px}
 .btn:active{background:#3a3a44}
-.btn-accent{background:var(--accent);color:#fff;font-weight:700;min-width:70px}
+.btn-accent{background:var(--accent);color:#fff;font-weight:700;min-width:80px;font-size:15px}
 .btn-accent:active{background:#c53333}
 .btn-green{background:#1e5c40;color:#7fe0b8;font-weight:700}
 .btn-blue{background:#1a3a5c;color:#7ab8f0;font-weight:700}
-#setlist-btn{background:none;border:1px solid var(--border);color:var(--chord);font-size:17px;width:34px;height:34px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation}
-#key-display{font-family:'Fira Code',monospace;font-size:13px;font-weight:600;color:var(--chord);min-width:28px;text-align:center}
-#capo-display{font-family:'Fira Code',monospace;font-size:12px;color:var(--capo);min-width:22px;text-align:center}
-#speed-display{font-family:'Fira Code',monospace;font-size:12px;color:var(--lyric-dim);min-width:34px;text-align:center}
-#fs-badge{font-family:'Fira Code',monospace;font-size:11px;color:var(--lyric-dim);min-width:24px;text-align:center}
-#next-chord-bar{display:none;flex-shrink:0;padding:3px 14px;background:linear-gradient(90deg,rgba(91,200,175,0.15),transparent);border-bottom:1px solid rgba(91,200,175,0.2);font-family:'Fira Code',monospace;font-size:12px;color:var(--capo)}
+#setlist-btn{background:none;border:1px solid var(--border);color:var(--chord);font-size:20px;width:40px;height:40px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation}
+#key-display{font-family:'Fira Code',monospace;font-size:15px;font-weight:600;color:var(--chord);min-width:30px;text-align:center}
+#capo-display{font-family:'Fira Code',monospace;font-size:14px;color:var(--capo);min-width:24px;text-align:center}
+#speed-display{font-family:'Fira Code',monospace;font-size:14px;color:var(--lyric-dim);min-width:36px;text-align:center}
+#fs-badge{font-family:'Fira Code',monospace;font-size:13px;color:var(--lyric-dim);min-width:26px;text-align:center}
+#next-chord-bar{display:none;flex-shrink:0;padding:4px 14px;background:linear-gradient(90deg,rgba(91,200,175,0.15),transparent);border-bottom:1px solid rgba(91,200,175,0.2);font-family:'Fira Code',monospace;font-size:13px;color:var(--capo)}
 #next-chord-bar.visible{display:flex;align-items:center;gap:8px}
-.nxt-label{opacity:.6;font-size:10px}
-.nxt-chord{font-size:16px;font-weight:600}
+.nxt-label{opacity:.6;font-size:11px}
+.nxt-chord{font-size:18px;font-weight:600}
 #scroll-wrap{flex:1;min-height:0;overflow:hidden;position:relative}
-#scroll-content{padding:14px 16px 110px;will-change:transform;transform:translateY(0)}
+#scroll-content{padding:14px 16px 120px;will-change:transform;transform:translateY(0)}
 
-/* 横向き: 大きい文字・画面幅フル活用 */
+/* 横向き */
 @media (orientation:landscape){
   :root{--fs:32px}
-  #topbar{flex-wrap:nowrap;padding:2px 8px;gap:4px;min-height:0}
-  #song-title{font-size:13px;min-width:40px;max-width:100px}
+  #topbar{flex-wrap:nowrap;padding:4px 10px;gap:6px;min-height:0}
+  #song-title{font-size:14px;min-width:40px;max-width:120px}
   .ctrl-label{display:none}
-  .btn{padding:2px 7px;font-size:11px}
-  #setlist-btn{width:26px;height:26px;font-size:13px}
-  #key-display{font-size:12px;min-width:20px}
-  #capo-display{font-size:11px;min-width:16px}
-  #fs-badge{font-size:10px;min-width:16px}
-  #next-chord-bar{padding:2px 12px;font-size:11px}
-  .nxt-chord{font-size:18px}
-  #scroll-content{padding:4px 6px 70px}
-  #overlay{padding:6px 12px 6px;gap:8px}
-  .song-line{padding:2px 4px;width:100%}
+  .btn{padding:6px 12px;font-size:13px;min-height:36px}
+  .btn-accent{min-width:76px;font-size:14px;min-height:36px}
+  #setlist-btn{width:36px;height:36px;font-size:19px}
+  #key-display{font-size:14px;min-width:24px}
+  #capo-display{font-size:13px;min-width:20px}
+  #fs-badge{font-size:12px;min-width:20px}
+  #next-chord-bar{padding:3px 12px;font-size:12px}
+  .nxt-chord{font-size:20px}
+  #scroll-content{padding:4px 8px 80px}
+  #overlay{padding:8px 12px 10px;gap:10px}
+  #tap-btn{min-width:62px;padding:7px 12px}
+  #tap-bpm{font-size:17px}
+  .song-line{padding:2px 6px;width:100%}
   .word{margin-bottom:1px}
   .section-label{margin:6px 0 1px;font-size:10px}
   .line-sep{margin:2px 0 3px}
 }
 
-/* 縦向き: topbarを2行に */
+/* 縦向き */
 @media (orientation:portrait){
-  #topbar{flex-wrap:wrap;padding:5px 8px;gap:5px}
-  #setlist-btn{order:1}
-  #song-title{order:2;flex:1;font-size:15px}
+  #topbar{flex-wrap:wrap;padding:6px 10px;gap:6px}
+  #setlist-btn{order:1;width:44px;height:44px;font-size:22px}
+  #song-title{order:2;flex:1;font-size:16px}
   #karaoke-btn{order:3}
-  #edit-btn{order:4}
-  .ctrl-group{order:5}
-  #overlay{padding:14px 10px 10px;gap:8px}
-  #tap-btn{min-width:52px;padding:5px 8px}
+  #vocal-btn{order:4}
+  #edit-btn{order:5}
+  .ctrl-group{order:6}
+  .btn{padding:8px 12px;font-size:14px}
+  #overlay{padding:16px 12px 12px;gap:10px}
+  #tap-btn{min-width:60px;padding:8px 12px}
+  .btn-accent{min-width:84px}
 }
 
 .section-label{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin:14px 0 4px;opacity:.7}
@@ -133,11 +139,11 @@ body.vocal-mode #vocal-indicator{display:inline}
 .song-line.active-line .lyric-span{color:#fff;font-weight:700}
 .song-line.next-line .lyric-span{color:#c0c0d8}
 .line-sep{width:100%;height:1px;background:var(--border);margin:3px 0 6px;opacity:.3}
-#overlay{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--ui-bg) 50%);padding:18px 14px 12px;display:flex;justify-content:center;align-items:center;gap:10px;pointer-events:none;flex-wrap:wrap}
+#overlay{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--ui-bg) 50%);padding:20px 14px 14px;display:flex;justify-content:center;align-items:center;gap:10px;pointer-events:none;flex-wrap:wrap}
 #overlay>*{pointer-events:all;touch-action:manipulation}
-#tap-btn{background:#2a1a00;border:2px solid var(--chord);color:var(--chord);font-family:'Fira Code',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:60px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
-#tap-bpm{font-size:15px;line-height:1}
-#tap-label{font-size:9px;opacity:.6;letter-spacing:.08em}
+#tap-btn{background:#2a1a00;border:2px solid var(--chord);color:var(--chord);font-family:'Fira Code',monospace;font-size:14px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:66px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#tap-bpm{font-size:18px;line-height:1}
+#tap-label{font-size:10px;opacity:.6;letter-spacing:.08em}
 .panel{display:none;position:fixed;inset:0;background:var(--bg);z-index:200;flex-direction:column}
 .panel.open{display:flex}
 .panel-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
