@@ -218,6 +218,11 @@ input[type=file]{display:none}
   <span id="nxt-chord-text" class="nxt-chord"></span>
 </div>
 
+<!-- メモバー -->
+<div id="memo-bar" style="display:none;flex-shrink:0;padding:4px 14px;background:linear-gradient(90deg,rgba(244,200,66,0.08),transparent);border-bottom:1px solid rgba(244,200,66,0.15);font-size:11px;color:#c8b84a;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+  &#128221; <span id="memo-text"></span>
+</div>
+
 <div id="scroll-wrap">
   <div id="scroll-content"></div>
 </div>
@@ -247,7 +252,10 @@ input[type=file]{display:none}
   <div id="setlist-list"></div>
   <div id="setlist-footer">
     <button class="btn btn-green" style="flex:1" onclick="openNewSongEditor()">&#43; 手動で追加</button>
-    <button class="btn btn-blue" style="flex:1" onclick="openScanPanel()">&#128247; コード譜を読み込む</button>
+    <button class="btn btn-blue" style="flex:1" onclick="openScanPanel()">&#128247; スキャン</button>
+    <button class="btn" style="flex:1" onclick="exportData()">&#128229; 書き出し</button>
+    <button class="btn" style="flex:1" onclick="document.getElementById('import-input').click()">&#128228; 読み込み</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(this)">
   </div>
 </div>
 
@@ -263,7 +271,9 @@ input[type=file]{display:none}
       コードは <code>[G]夏の[Em]終わり</code> / セクションは <code>[Verse]</code><br>
       待機は <code>[Intro bars:8]</code> → TAPテンポから自動カウントダウン
     </div>
-    <textarea id="song-input" spellcheck="false"></textarea>
+    <textarea id="song-input" spellcheck="false" style="flex:3"></textarea>
+    <div style="font-size:10px;color:var(--lyric-dim);margin-top:4px">&#128221; メモ（ライブ注意事項など）</div>
+    <textarea id="memo-input" spellcheck="false" placeholder="例: Dサビで転調注意 / テンポ少し速め / MCあり" style="flex:1;min-height:60px;max-height:100px"></textarea>
     <div class="editor-actions">
       <button class="btn btn-accent" onclick="applySong()">&#10003; 保存</button>
     </div>
@@ -411,6 +421,16 @@ function render() {
   updateCapoDisplay();updateKeyDisplay(p.origKey);
   document.documentElement.style.setProperty('--fs',fontSize+'px');
   document.getElementById('fs-badge').textContent=fontSize;
+
+  // メモバー
+  var memo=setlist[currentIndex].memo||'';
+  var memoBar=document.getElementById('memo-bar');
+  if(memo){
+    document.getElementById('memo-text').textContent=memo;
+    memoBar.style.display='block';
+  } else {
+    memoBar.style.display='none';
+  }
 
   // vocal mode
   if(p.vocalOff){ document.body.classList.add('vocal-mode'); }
@@ -730,53 +750,39 @@ function scrollFrame(ts){
   if(checkWaitBlocks())return;
   rafId=requestAnimationFrame(scrollFrame);
 }
-// タッチスクロール（慣性なし・速度平滑化）
-var tsy=0, tscy=0;
-var tsHistory=[]; // [{y, t}] 直近の動きを保持
+// タッチスクロール
+var tsy=0, tscy=0, tsHistory=[];
 
 document.getElementById('scroll-wrap').addEventListener('touchstart',function(e){
-  if(rehearsalMode)return;
-  var recEntry=document.getElementById('rec-entry');
-  if(recEntry&&recEntry.contains(e.target))return;
+  // rec-entryボタンは無視
+  if(document.getElementById('rec-entry').contains(e.target))return;
   tsy=e.touches[0].clientY;
   tscy=scrollY;
   tsHistory=[{y:tsy, t:Date.now()}];
-  if(scrollSpeed>0) stopScroll();
+  // 通常モードのみスクロール停止
+  if(!rehearsalMode && scrollSpeed>0) stopScroll();
 },{passive:true});
 
 document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){
+  if(document.getElementById('rec-entry').contains(e.target))return;
   var cy=e.touches[0].clientY;
-  if(rehearsalMode){
-    // REC中：スワイプでスクロール位置を動かして記録
-    scrollY=tscy+(tsy-cy);
-    tsHistory.push({y:cy, t:Date.now()});
-    tsHistory=tsHistory.filter(function(h){return Date.now()-h.t<100;});
-    recordRehearsalFrame();
-    applyScroll();
-    return;
-  }
   scrollY=tscy+(tsy-cy);
-  tsHistory.push({y:cy, t:Date.now()});
-  tsHistory=tsHistory.filter(function(h){return Date.now()-h.t<100;});
+  var now=Date.now();
+  tsHistory.push({y:cy, t:now});
+  tsHistory=tsHistory.filter(function(h){return now-h.t<150;});
+  if(rehearsalMode) recordRehearsalFrame();
   applyScroll();
 },{passive:true});
 
 document.getElementById('scroll-wrap').addEventListener('touchend',function(e){
+  if(document.getElementById('rec-entry').contains(e.target))return;
   if(rehearsalMode){
-    // REC中：指を離したら速度0で記録。STARTは起動しない
     scrollSpeed=0;
     recordRehearsalFrame();
-    return;
   }
-  tsHistory=[];
-},{passive:true});
-
-// REC中のtouchstartも別途捕捉（スクロール開始位置を記録）
-document.getElementById('scroll-wrap').addEventListener('touchstart',function(e){
-  if(!rehearsalMode)return;
-  tsy=e.touches[0].clientY;
+  // touchend時点のscrollYを基準にリセット（ジャンプ防止）
   tscy=scrollY;
-  tsHistory=[{y:tsy, t:Date.now()}];
+  tsHistory=[];
 },{passive:true});
 function changeSpeed(d){
   currentSpeedTarget=Math.max(5,Math.min(200,currentSpeedTarget+d));
@@ -839,7 +845,14 @@ function renderSetlistPanel(){
     var t=document.createElement('div');t.className='item-title';t.textContent=p.title;
     var meta=document.createElement('div');meta.className='item-meta';
     meta.innerHTML='KEY: '+(p.origKey||'—')+(c>0?' &middot; <span class="capo-tag">CAPO '+c+'</span>':'');
-    info.appendChild(t);info.appendChild(meta);
+    if(song.memo){
+      var memoEl=document.createElement('div');
+      memoEl.style.cssText='font-size:10px;color:#c8b84a;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+      memoEl.textContent='📝 '+song.memo;
+      info.appendChild(t);info.appendChild(meta);info.appendChild(memoEl);
+    } else {
+      info.appendChild(t);info.appendChild(meta);
+    }
     var actions=document.createElement('div');actions.className='item-actions';
     function mkBtn(label,cls,cb){var b=document.createElement('button');b.className='icon-btn'+(cls?' '+cls:'');b.textContent=label;b.addEventListener('click',function(e){e.stopPropagation();cb();});return b;}
     actions.appendChild(mkBtn('✏️','',function(){closeSetlist();openEditorForIndex(i);}));
@@ -855,13 +868,103 @@ function moveSong(i,dir){var j=i+dir;if(j<0||j>=setlist.length)return;var tmp=se
 function deleteSong(i){if(!confirm('「'+parseSong(setlist[i].raw).title+'」を削除しますか？'))return;setlist.splice(i,1);if(currentIndex>=setlist.length)currentIndex=Math.max(0,setlist.length-1);renderSetlistPanel();render();}
 
 // ==== EDITOR ====
-function openNewSongEditor(){editingIndex=-1;document.getElementById('editor-title').textContent='新しい曲を追加';document.getElementById('song-input').value="title: 新しい曲\nkey: G\ncapo: 0\n\n[Verse]\n[G]ここに[Em]歌詞を[C]入力[D]\n\n[Chorus]\n[C]コードは[G]直前に[D]";document.getElementById('editor-panel').classList.add('open');}
-function openEditorForIndex(i){editingIndex=i;document.getElementById('editor-title').textContent='曲を編集';document.getElementById('song-input').value=setlist[i].raw;document.getElementById('editor-panel').classList.add('open');}
+function openNewSongEditor(){
+  editingIndex=-1;
+  document.getElementById('editor-title').textContent='新しい曲を追加';
+  document.getElementById('song-input').value="title: 新しい曲\nkey: G\ncapo: 0\n\n[Verse]\n[G]ここに[Em]歌詞を[C]入力[D]\n\n[Chorus]\n[C]コードは[G]直前に[D]";
+  document.getElementById('memo-input').value='';
+  document.getElementById('editor-panel').classList.add('open');
+}
+function openEditorForIndex(i){
+  editingIndex=i;
+  document.getElementById('editor-title').textContent='曲を編集';
+  document.getElementById('song-input').value=setlist[i].raw;
+  document.getElementById('memo-input').value=setlist[i].memo||'';
+  document.getElementById('editor-panel').classList.add('open');
+}
 function editCurrentSong(){stopScroll();openEditorForIndex(currentIndex);}
 function closeEditor(){document.getElementById('editor-panel').classList.remove('open');}
-function applySong(){var raw=document.getElementById('song-input').value.trim();if(!raw)return;if(editingIndex===-1){setlist.push({raw:raw,transpose:0,capo:null});currentIndex=setlist.length-1;}else{setlist[editingIndex]={raw:raw,transpose:0,capo:null};}closeEditor();render();}
+function applySong(){
+  var raw=document.getElementById('song-input').value.trim();
+  var memo=document.getElementById('memo-input').value.trim();
+  if(!raw)return;
+  if(editingIndex===-1){
+    setlist.push({raw:raw,transpose:0,capo:null,memo:memo});
+    currentIndex=setlist.length-1;
+  } else {
+    setlist[editingIndex]={raw:raw,transpose:0,capo:setlist[editingIndex].capo||null,memo:memo};
+  }
+  closeEditor();render();
+}
 
-// ==== SCAN ====
+// ==== EXPORT / IMPORT ====
+function exportData(){
+  // 全曲データ＋リハーサルデータをまとめてJSON
+  var data={
+    version:1,
+    exportedAt:new Date().toISOString(),
+    songs:setlist.map(function(song,i){
+      return {
+        raw:song.raw,
+        transpose:song.transpose||0,
+        capo:song.capo,
+        memo:song.memo||'',
+        rehearsal:loadRehearsalData(i)||null
+      };
+    })
+  };
+  var json=JSON.stringify(data,null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  var date=new Date();
+  a.download='chord-scroll-backup-'+date.getFullYear()+(date.getMonth()+1)+date.getDate()+'.json';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+}
+
+function importData(input){
+  var file=input.files[0];if(!file)return;input.value='';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(!data.songs||!Array.isArray(data.songs)){
+        alert('ファイルの形式が正しくありません。');return;
+      }
+      var mode=confirm(
+        data.songs.length+'曲のデータが見つかりました。\n\n'+
+        '【OK】現在のセットリストに追加\n'+
+        '【キャンセル】現在のデータを全て置き換え'
+      );
+      if(mode){
+        // 追加
+        data.songs.forEach(function(s){
+          setlist.push({raw:s.raw,transpose:s.transpose||0,capo:s.capo,memo:s.memo||''});
+          if(s.rehearsal) saveRehearsalData(setlist.length-1,s.rehearsal);
+        });
+      } else {
+        // 置き換え
+        if(!confirm('現在の'+setlist.length+'曲のデータを全て削除して置き換えますか？'))return;
+        setlist=[];
+        data.songs.forEach(function(s,i){
+          setlist.push({raw:s.raw,transpose:s.transpose||0,capo:s.capo,memo:s.memo||''});
+          if(s.rehearsal) saveRehearsalData(i,s.rehearsal);
+        });
+        currentIndex=0;
+      }
+      saveState();
+      render();
+      closeSetlist();
+      alert('読み込み完了！ '+data.songs.length+'曲を追加しました。');
+    }catch(err){
+      alert('読み込みエラー: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+}
 function openScanPanel(){closeSetlist();document.getElementById('scan-panel').classList.add('open');}
 function closeScanPanel(){document.getElementById('scan-panel').classList.remove('open');}
 function clearScan(){
