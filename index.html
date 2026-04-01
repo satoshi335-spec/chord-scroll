@@ -78,9 +78,9 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
   .btn-accent{min-width:84px}
 }
 
-.section-label{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:10px 0 2px;opacity:.45;display:flex;align-items:center}
-.at-badge{font-size:9px;opacity:.6}
-@media (orientation:landscape){.section-label{font-size:8px;margin:6px 0 1px;opacity:.4}}
+.section-label{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:10px 0 2px;opacity:.5;display:flex;align-items:center;padding:4px 2px;cursor:pointer;touch-action:manipulation}
+.at-badge{font-size:11px;opacity:.8;margin-left:6px;background:rgba(232,69,69,0.15);border:1px solid rgba(232,69,69,0.4);padding:2px 6px;border-radius:3px;font-family:'Fira Code',monospace}
+@media (orientation:landscape){.section-label{font-size:9px;margin:5px 0 1px;opacity:.45}}
 
 /* 待機ブロック（前奏・間奏など） */
 .wait-block{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 16px;margin:4px 0;border-radius:8px;background:rgba(232,69,69,0.08);border:1px solid rgba(232,69,69,0.2);cursor:pointer;touch-action:manipulation}
@@ -464,43 +464,44 @@ function render() {
       content.appendChild(el);
     }
     else if(block.type==='wait'){
-      var wb=document.createElement('div');wb.className='wait-block';
       if(block.waitMode==='time'){
-        wb.setAttribute('data-time',block.timeSec);
-        wb.setAttribute('data-bars','0');
+        // time:はat:と同様にsectionとして表示（waitブロックは使わない）
+        var el2=document.createElement('div');el2.className='section-label';
+        el2.style.cursor='pointer';
+        var ls2=document.createElement('span');ls2.textContent=block.label;
+        el2.appendChild(ls2);
+        var ab2=document.createElement('span');ab2.className='at-badge';
+        ab2.textContent=block.timeSec+'s(\u5f85\u6a5f)';
+        el2.appendChild(ab2);
+        content.appendChild(el2);
       } else {
+        // bars:のみwaitブロック表示
+        var wb=document.createElement('div');wb.className='wait-block';
         wb.setAttribute('data-bars',block.bars);
         wb.setAttribute('data-time','0');
+        var wdesc=block.label+' \u00b7 '+block.bars+'\u5c0f\u7bc0';
+        var wtop=document.createElement('div');
+        wtop.style.cssText='display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:4px';
+        var wlabel=document.createElement('div');wlabel.className='wait-label';wlabel.textContent=wdesc;
+        var wedit=document.createElement('button');
+        wedit.textContent='\u5c0f\u7bc0\u6570\u5909\u66f4';
+        wedit.style.cssText='background:#2a2a30;border:1px solid #e84545;color:#e84545;font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;touch-action:manipulation;font-family:"Fira Code",monospace;flex-shrink:0';
+        (function(blockRef, wlabelRef, wbRef){
+          wedit.addEventListener('click',function(e){
+            e.stopPropagation();
+            editWaitBlock(blockRef, wlabelRef, wbRef);
+          });
+        })(block, wlabel, wb);
+        wtop.appendChild(wlabel);wtop.appendChild(wedit);
+        var wcount=document.createElement('div');wcount.className='wait-countdown';wcount.textContent=block.bars;
+        var wpwrap=document.createElement('div');wpwrap.className='wait-progress-wrap';
+        var wpbar=document.createElement('div');wpbar.className='wait-progress-bar';
+        wpwrap.appendChild(wpbar);
+        wb.appendChild(wtop);wb.appendChild(wcount);wb.appendChild(wpwrap);
+        content.appendChild(wb);
+        waitElements.push(wb);
+        lineElements.push(wb);
       }
-      var waitDesc=block.waitMode==='time'
-        ? block.label+' \u00b7 '+block.timeSec+'\u79d2'
-        : block.label+' \u00b7 '+block.bars+'\u5c0f\u7bc0';
-
-      // 上段：ラベル＋編集ボタン
-      var wtop=document.createElement('div');
-      wtop.style.cssText='display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:4px';
-      var wlabel=document.createElement('div');wlabel.className='wait-label';
-      wlabel.textContent=waitDesc;
-      var wedit=document.createElement('button');
-      wedit.textContent='\u79d2\u6570\u5909\u66f4';
-      wedit.style.cssText='background:#2a2a30;border:1px solid #e84545;color:#e84545;font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;touch-action:manipulation;font-family:"Fira Code",monospace;flex-shrink:0';
-      (function(blockRef, wlabelRef, wbRef){
-        wedit.addEventListener('click',function(e){
-          e.stopPropagation();
-          editWaitBlock(blockRef, wlabelRef, wbRef);
-        });
-      })(block, wlabel, wb);
-      wtop.appendChild(wlabel);wtop.appendChild(wedit);
-
-      var wcount=document.createElement('div');wcount.className='wait-countdown';
-      wcount.textContent=block.waitMode==='time'?block.timeSec:block.bars;
-      var wpwrap=document.createElement('div');wpwrap.className='wait-progress-wrap';
-      var wpbar=document.createElement('div');wpbar.className='wait-progress-bar';
-      wpwrap.appendChild(wpbar);
-      wb.appendChild(wtop);wb.appendChild(wcount);wb.appendChild(wpwrap);
-      content.appendChild(wb);
-      waitElements.push(wb);
-      lineElements.push(wb);
     }
     else if(block.type==='chordline'){
       var lineEl=document.createElement('div');lineEl.className='song-line';
