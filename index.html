@@ -82,6 +82,15 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
 .at-badge{font-size:11px;color:#fff;margin-left:6px;background:rgba(180,40,40,0.7);border:1px solid rgba(232,69,69,0.6);padding:2px 8px;border-radius:3px;font-family:'Fira Code',monospace;font-weight:600}
 @media (orientation:landscape){.section-label{font-size:9px;margin:5px 0 1px;opacity:.45}}
 
+/* 使い方パネル */
+.help-section{width:100%;margin-bottom:20px}
+.help-title{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.1em;color:var(--chord);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.help-row{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);align-items:baseline}
+.help-key{font-family:'Fira Code',monospace;font-size:12px;color:var(--capo);min-width:90px;flex-shrink:0;font-weight:600}
+.help-val{font-size:13px;color:var(--lyric);line-height:1.5}
+.help-code{font-family:'Fira Code',monospace;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;margin:8px 0;color:var(--lyric);white-space:pre;line-height:1.7}
+.help-note{font-size:11px;color:var(--lyric-dim);margin-top:6px;padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:4px;border-left:2px solid var(--capo)}
+
 /* 待機ブロック（前奏・間奏など） */
 .wait-block{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 16px;margin:4px 0;border-radius:8px;background:rgba(232,69,69,0.08);border:1px solid rgba(232,69,69,0.2);cursor:pointer;touch-action:manipulation}
 .wait-label{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.12em;color:var(--accent);opacity:.8;margin-bottom:4px;text-transform:uppercase}
@@ -248,10 +257,83 @@ input[type=file]{display:none}
     <button class="btn" style="flex:1" onclick="exportData()">&#128229; 書き出し</button>
     <button class="btn" style="flex:1" onclick="document.getElementById('import-input').click()">&#128228; 読み込み</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(this)">
+    <button class="btn" style="flex:1" onclick="openHelpPanel()">&#10067; 使い方</button>
   </div>
 </div>
 
-<!-- EDITOR -->
+<!-- HELP -->
+<div id="help-panel" class="panel">
+  <div class="panel-header">
+    <span class="panel-title">&#10067; 使い方</span>
+    <button class="btn" onclick="closeHelpPanel()">&#10005; 閉じる</button>
+  </div>
+  <div class="panel-body" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;gap:0;align-items:flex-start">
+
+    <div class="help-section">
+      <div class="help-title">&#9654; 基本の使い方</div>
+      <div class="help-row"><span class="help-key">&#9776;</span><span class="help-val">セットリストを開く・曲を追加</span></div>
+      <div class="help-row"><span class="help-key">START</span><span class="help-val">自動スクロール開始 / 停止</span></div>
+      <div class="help-row"><span class="help-key">SPEED &#177;</span><span class="help-val">スクロール速度を調整</span></div>
+      <div class="help-row"><span class="help-key">TAP</span><span class="help-val">テンポを叩いてBPM計測（bars:に使用）</span></div>
+      <div class="help-row"><span class="help-key">&#9198; &#9197;</span><span class="help-val">前 / 次の曲へ移動</span></div>
+      <div class="help-row"><span class="help-key">行タップ</span><span class="help-val">その行にジャンプしてスクロール再開</span></div>
+      <div class="help-row"><span class="help-key">スワイプ</span><span class="help-val">手動スクロール（STARTは一時停止）</span></div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-title">&#127908; 表示モード</div>
+      <div class="help-row"><span class="help-key">&#127908;</span><span class="help-val">カラオケモード：現在行をハイライト</span></div>
+      <div class="help-row"><span class="help-key">&#127897; VOCAL</span><span class="help-val">コード非表示・歌詞のみ大きく表示</span></div>
+      <div class="help-row"><span class="help-key">KEY &#9664;&#9654;</span><span class="help-val">移調（コードを自動変換）</span></div>
+      <div class="help-row"><span class="help-key">CAPO &#9664;&#9654;</span><span class="help-val">カポ番号の表示</span></div>
+      <div class="help-row"><span class="help-key">A- / A+</span><span class="help-val">文字サイズ調整</span></div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-title">&#128221; 曲データの書き方</div>
+      <div class="help-code">title: &#26354;&#21517;
+key: G
+capo: 2
+
+[&#12452;&#12531;&#12488;&#12525; at:0]
+
+[A&#12513;&#12525; at:16]
+[G]&#22799;&#12398;[Em]&#32456;&#12431;&#12426;&#12395;[C]&#21531;&#12392;[D]&#27497;&#12356;&#12383;
+
+[&#12469;&#12499; at:48]
+[C]&#12414;&#12383;&#20250;&#12360;&#12427;[G]&#26085;&#12414;&#12391;[D]</div>
+      <div class="help-row"><span class="help-key">[G]歌詞</span><span class="help-val">コードは歌詞の直前に記入</span></div>
+      <div class="help-row"><span class="help-key">[サビ at:48]</span><span class="help-val">曲開始から48秒でここに自動ジャンプ</span></div>
+      <div class="help-row"><span class="help-key">[間奏 bars:8]</span><span class="help-val">TAPのBPMから8小節分を自動カウント</span></div>
+      <div class="help-row"><span class="help-key">vocal: off</span><span class="help-val">コードを非表示にして歌詞のみ表示</span></div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-title">&#128247; スキャン機能</div>
+      <div class="help-row"><span class="help-key">1</span><span class="help-val">☰→「📷 スキャン」を開く</span></div>
+      <div class="help-row"><span class="help-key">2</span><span class="help-val">カメラ撮影 / 画像選択（複数可）/ PDF</span></div>
+      <div class="help-row"><span class="help-key">3</span><span class="help-val">「まとめてAI解析」をタップ</span></div>
+      <div class="help-row"><span class="help-key">4</span><span class="help-val">結果を確認・修正してセットリストに追加</span></div>
+      <div class="help-note">複数ページは複数枚選択してまとめて解析できます</div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-title">&#128229; バックアップ</div>
+      <div class="help-row"><span class="help-key">書き出し</span><span class="help-val">全曲データをJSONファイルで保存</span></div>
+      <div class="help-row"><span class="help-key">読み込み</span><span class="help-val">JSONを読み込んで復元・追加</span></div>
+      <div class="help-note">機種変更や他のiPhoneへの移行もこれで対応できます</div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-title">&#9202; at: の使い方（経過時間自動ジャンプ）</div>
+      <div class="help-row"><span class="help-key">1</span><span class="help-val">曲を再生しながらストップウォッチで計測</span></div>
+      <div class="help-row"><span class="help-key">2</span><span class="help-val">各セクションのラベルをタップ→秒数入力</span></div>
+      <div class="help-row"><span class="help-key">3</span><span class="help-val">STARTを押すと時計スタート、自動でジャンプ</span></div>
+      <div class="help-note">少し短めに設定すると歌い始めに余裕が出ます</div>
+    </div>
+
+  </div>
+</div>
 <div id="editor-panel" class="panel">
   <div class="panel-header">
     <span class="panel-title" id="editor-title">&#128221; 曲を編集</span>
@@ -977,6 +1059,8 @@ function importData(input){
   };
   reader.readAsText(file);
 }
+function openHelpPanel(){closeSetlist();document.getElementById('help-panel').classList.add('open');}
+function closeHelpPanel(){document.getElementById('help-panel').classList.remove('open');}
 function openScanPanel(){closeSetlist();document.getElementById('scan-panel').classList.add('open');}
 function closeScanPanel(){document.getElementById('scan-panel').classList.remove('open');}
 
