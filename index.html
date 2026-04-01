@@ -457,7 +457,6 @@ function render() {
     }
     else if(block.type==='wait'){
       var wb=document.createElement('div');wb.className='wait-block';
-      // time:かbars:かをdata属性に保存
       if(block.waitMode==='time'){
         wb.setAttribute('data-time',block.timeSec);
         wb.setAttribute('data-bars','0');
@@ -468,7 +467,20 @@ function render() {
       var waitDesc=block.waitMode==='time'
         ? block.label+' ('+block.timeSec+'秒)'
         : block.label+' ('+block.bars+'小節)';
-      var wlabel=document.createElement('div');wlabel.className='wait-label';wlabel.textContent=waitDesc;
+      var wlabel=document.createElement('div');wlabel.className='wait-label';
+      wlabel.textContent=waitDesc;
+      // ✏️ 秒数編集ボタン
+      var wedit=document.createElement('span');
+      wedit.textContent=' ✏️';
+      wedit.style.cssText='cursor:pointer;font-size:12px;opacity:.7';
+      (function(blockRef, wlabelRef, wbRef){
+        wedit.addEventListener('click',function(e){
+          e.stopPropagation();
+          editWaitBlock(blockRef, wlabelRef, wbRef);
+        });
+      })(block, wlabel, wb);
+      wlabel.appendChild(wedit);
+
       var wcount=document.createElement('div');wcount.className='wait-countdown';
       wcount.textContent=block.waitMode==='time'?block.timeSec:block.bars;
       var wpwrap=document.createElement('div');wpwrap.className='wait-progress-wrap';
@@ -483,7 +495,7 @@ function render() {
       var lineEl=document.createElement('div');lineEl.className='song-line';
       for(var j=0;j<block.tokens.length;j++){
         var tok=block.tokens[j];
-        var lyricText=tok.lyric.replace(/\s+$/,''); // 末尾空白除去
+        var lyricText=tok.lyric.replace(/\s+$/,'');
         var hasLyric=lyricText.length>0;
         var word=document.createElement('div');word.className='word';
         var ce=document.createElement('span');
@@ -493,9 +505,10 @@ function render() {
         if(hasLyric){
           le.textContent=tok.lyric;
         } else {
-          // 歌詞なし・コードのみ → コードだけ表示、歌詞部分は非表示スペース
-          le.textContent='\u00a0'; // &nbsp; で高さ確保
+          // コードのみ → 歌詞部分は非表示だが間隔を確保
+          le.textContent='\u00a0\u00a0'; // スペース2つで間隔を確保
           le.style.visibility='hidden';
+          word.style.marginRight='12px'; // コード間の間隔
         }
         word.appendChild(ce);word.appendChild(le);lineEl.appendChild(word);
       }
@@ -511,7 +524,37 @@ function render() {
   activeLine=-1;resetScroll();saveState();bindLineTap();
 }
 
-// ==== VOCAL MODE ====
+// ==== WAIT BLOCK 秒数編集 ====
+function editWaitBlock(block, wlabelEl, wbEl){
+  var current = block.waitMode==='time' ? block.timeSec : block.bars;
+  var unit = block.waitMode==='time' ? '秒' : '小節';
+  var newVal = prompt(block.label+' の時間を入力してください（'+unit+'）', String(current));
+  if(newVal===null)return;
+  var num = parseFloat(newVal);
+  if(isNaN(num)||num<0)return;
+
+  // 曲データのrawを書き換える
+  var song = setlist[currentIndex];
+  var oldPattern, newPattern;
+  if(block.waitMode==='time'){
+    oldPattern = '['+block.label+' time:'+block.timeSec+']';
+    newPattern = '['+block.label+' time:'+num+']';
+    block.timeSec = num;
+  } else {
+    oldPattern = '['+block.label+' bars:'+block.bars+']';
+    newPattern = '['+block.label+' bars:'+num+']';
+    block.bars = num;
+  }
+  song.raw = song.raw.replace(oldPattern, newPattern);
+  saveState();
+  // 表示を更新
+  var desc = block.waitMode==='time'
+    ? block.label+' ('+num+'秒)'
+    : block.label+' ('+num+'小節)';
+  wlabelEl.childNodes[0].textContent = desc;
+  wbEl.querySelector('.wait-countdown').textContent = num;
+  wbEl.setAttribute(block.waitMode==='time'?'data-time':'data-bars', num);
+}
 function toggleVocalMode(){
   document.body.classList.toggle('vocal-mode');
   var on=document.body.classList.contains('vocal-mode');
