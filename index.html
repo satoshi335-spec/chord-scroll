@@ -445,7 +445,12 @@ function render() {
     if(block.type==='blank'){var s=document.createElement('div');s.className='line-sep';content.appendChild(s);}
     else if(block.type==='section'){
       var el=document.createElement('div');el.className='section-label';
-      el.textContent=block.label;
+      el.style.cursor='pointer';
+      // ラベル本文
+      var labelText=document.createElement('span');
+      labelText.textContent=block.label;
+      el.appendChild(labelText);
+      // 秒数バッジ（speed指定がある場合）
       if(block.speed>0){
         var spBadge=document.createElement('span');
         spBadge.style.cssText='margin-left:8px;font-size:10px;color:var(--capo);opacity:.8;font-family:"Fira Code",monospace';
@@ -453,6 +458,16 @@ function render() {
         el.appendChild(spBadge);
         el.setAttribute('data-speed',block.speed);
       }
+      // ⏱タップで秒数設定
+      var timeBadge=document.createElement('span');
+      timeBadge.style.cssText='margin-left:8px;font-size:10px;color:#e84545;font-family:"Fira Code",monospace;border:1px solid #e84545;padding:1px 5px;border-radius:3px';
+      timeBadge.textContent='⏱ 秒設定';
+      el.appendChild(timeBadge);
+      (function(blockRef, elRef, timeBadgeRef){
+        el.addEventListener('click',function(e){
+          editSectionTime(blockRef, elRef, timeBadgeRef);
+        });
+      })(block, el, timeBadge);
       content.appendChild(el);
     }
     else if(block.type==='wait'){
@@ -465,28 +480,31 @@ function render() {
         wb.setAttribute('data-time','0');
       }
       var waitDesc=block.waitMode==='time'
-        ? block.label+' ('+block.timeSec+'秒)'
-        : block.label+' ('+block.bars+'小節)';
+        ? block.label+' · '+block.timeSec+'秒'
+        : block.label+' · '+block.bars+'小節';
+
+      // 上段：ラベル＋編集ボタン
+      var wtop=document.createElement('div');
+      wtop.style.cssText='display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:4px';
       var wlabel=document.createElement('div');wlabel.className='wait-label';
       wlabel.textContent=waitDesc;
-      // ✏️ 秒数編集ボタン
-      var wedit=document.createElement('span');
-      wedit.textContent=' ✏️';
-      wedit.style.cssText='cursor:pointer;font-size:12px;opacity:.7';
+      var wedit=document.createElement('button');
+      wedit.textContent='秒数変更';
+      wedit.style.cssText='background:#2a2a30;border:1px solid #e84545;color:#e84545;font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;touch-action:manipulation;font-family:"Fira Code",monospace;flex-shrink:0';
       (function(blockRef, wlabelRef, wbRef){
         wedit.addEventListener('click',function(e){
           e.stopPropagation();
           editWaitBlock(blockRef, wlabelRef, wbRef);
         });
       })(block, wlabel, wb);
-      wlabel.appendChild(wedit);
+      wtop.appendChild(wlabel);wtop.appendChild(wedit);
 
       var wcount=document.createElement('div');wcount.className='wait-countdown';
       wcount.textContent=block.waitMode==='time'?block.timeSec:block.bars;
       var wpwrap=document.createElement('div');wpwrap.className='wait-progress-wrap';
       var wpbar=document.createElement('div');wpbar.className='wait-progress-bar';
       wpwrap.appendChild(wpbar);
-      wb.appendChild(wlabel);wb.appendChild(wcount);wb.appendChild(wpwrap);
+      wb.appendChild(wtop);wb.appendChild(wcount);wb.appendChild(wpwrap);
       content.appendChild(wb);
       waitElements.push(wb);
       lineElements.push(wb);
@@ -525,15 +543,40 @@ function render() {
 }
 
 // ==== WAIT BLOCK 秒数編集 ====
-function editWaitBlock(block, wlabelEl, wbEl){
+function editSectionTime(block, elRef, timeBadgeRef){
+  var current = block.timeSec||0;
+  var newVal = prompt('['+block.label+'] の待機秒数を入力\n（0または空欄で待機なし）', String(current||''));
+  if(newVal===null)return;
+  var num = parseFloat(newVal)||0;
+  var song = setlist[currentIndex];
+
+  if(num>0){
+    // 通常セクション → time:付きwaitブロックに変換
+    var oldLine = '['+block.label+']';
+    var newLine = '['+block.label+' time:'+num+']';
+    song.raw = song.raw.replace(oldLine, newLine);
+    block.timeSec = num;
+    timeBadgeRef.textContent = '⏱ '+num+'秒';
+    timeBadgeRef.style.background = 'rgba(232,69,69,0.15)';
+  } else {
+    // 待機時間をクリア
+    var oldLine2 = '['+block.label+' time:'+(block.timeSec||0)+']';
+    var newLine2 = '['+block.label+']';
+    song.raw = song.raw.replace(oldLine2, newLine2);
+    block.timeSec = 0;
+    timeBadgeRef.textContent = '⏱ 秒設定';
+    timeBadgeRef.style.background = '';
+  }
+  saveState();
+  // 再描画して確実に反映
+  render();
+}
   var current = block.waitMode==='time' ? block.timeSec : block.bars;
   var unit = block.waitMode==='time' ? '秒' : '小節';
-  var newVal = prompt(block.label+' の時間を入力してください（'+unit+'）', String(current));
+  var newVal = prompt(block.label+' の時間を入力（'+unit+'）', String(current));
   if(newVal===null)return;
   var num = parseFloat(newVal);
   if(isNaN(num)||num<0)return;
-
-  // 曲データのrawを書き換える
   var song = setlist[currentIndex];
   var oldPattern, newPattern;
   if(block.waitMode==='time'){
@@ -547,11 +590,10 @@ function editWaitBlock(block, wlabelEl, wbEl){
   }
   song.raw = song.raw.replace(oldPattern, newPattern);
   saveState();
-  // 表示を更新
   var desc = block.waitMode==='time'
-    ? block.label+' ('+num+'秒)'
-    : block.label+' ('+num+'小節)';
-  wlabelEl.childNodes[0].textContent = desc;
+    ? block.label+' · '+num+'秒'
+    : block.label+' · '+num+'小節';
+  wlabelEl.textContent = desc;
   wbEl.querySelector('.wait-countdown').textContent = num;
   wbEl.setAttribute(block.waitMode==='time'?'data-time':'data-bars', num);
 }
