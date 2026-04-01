@@ -709,25 +709,28 @@ function applyScroll(){
   updateHighlight();
 }
 function stopScroll(){
-  scrollSpeed=0;if(rafId){cancelAnimationFrame(rafId);rafId=null;}lastTs=null;
+  scrollSpeed=0;
+  if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+  lastTs=null;
   document.getElementById('play-btn').textContent='\u25b6 START';
   document.getElementById('speed-display').textContent='\u2014';
 }
 function toggleScroll(){
   if(rehearsalMode)return; // REC中はSTART/STOP無効
-  if(scrollSpeed>0){stopScroll();return;}
+  if(scrollSpeed>0||rafId){stopScroll();return;}
   var frames=loadRehearsalData(currentIndex);
-  if(frames&&frames.length>0&&!rehearsalMode){
-    // リハーサルデータがあれば再生モード
+  if(frames&&frames.length>=2){
+    // リハーサル再生モード：位置補間のみ、速度不要
     rehearsalPlayIndex=0;
     rehearsalStartTime=Date.now();
-    scrollY=0;
-    scrollSpeed=frames[0].speed||40;
+    scrollY=frames[0].scrollY||0;
+    scrollSpeed=0; // 速度は使わない
     document.getElementById('play-btn').textContent='\u23f8 STOP';
     document.getElementById('speed-display').textContent='REC';
     lastTs=null;rafId=requestAnimationFrame(scrollFrame);
     return;
   }
+  // 通常スクロール
   if(!currentSpeedTarget)currentSpeedTarget=40;
   scrollSpeed=currentSpeedTarget;
   document.getElementById('play-btn').textContent='\u23f8 STOP';
@@ -735,21 +738,23 @@ function toggleScroll(){
   lastTs=null;rafId=requestAnimationFrame(scrollFrame);
 }
 function scrollFrame(ts){
-  if(!lastTs)lastTs=ts;
-  var dt=(ts-lastTs)/1000;lastTs=ts;
-  // リハーサル再生モード（位置補間）
+  // リハーサル再生モード（位置を時間で補間）
   var frames=loadRehearsalData(currentIndex);
-  if(frames&&frames.length>=2&&!rehearsalMode){
+  if(frames&&frames.length>=2&&!rehearsalMode&&document.getElementById('speed-display').textContent==='REC'){
     var elapsed=(Date.now()-rehearsalStartTime)/1000;
-    if(applyRehearsalPlayback(elapsed)){
-      rafId=requestAnimationFrame(scrollFrame);
+    var done=applyRehearsalPlayback(elapsed);
+    if(done&&elapsed>=frames[frames.length-1].time){
+      stopScroll();
       return;
     }
-    // 終了
+    rafId=requestAnimationFrame(scrollFrame);
     return;
   }
   // 通常スクロール
-  scrollY+=scrollSpeed*dt;applyScroll();
+  if(!lastTs)lastTs=ts;
+  var dt=(ts-lastTs)/1000;lastTs=ts;
+  scrollY+=scrollSpeed*dt;
+  applyScroll();
   var c=document.getElementById('scroll-content'),w=document.getElementById('scroll-wrap');
   if(scrollY>=c.scrollHeight-w.clientHeight){stopScroll();return;}
   if(checkWaitBlocks())return;
