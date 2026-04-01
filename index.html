@@ -334,9 +334,10 @@ var activeLine = -1, lineElements = [], waitElements = [], karaokeMode = false, 
 var waitTimer = null;
 // リハーサルモード
 var rehearsalMode = false;
-var rehearsalFrames = []; // [{time, scrollY, speed}]
+var rehearsalFrames = [];
 var rehearsalStartTime = 0;
-var rehearsalPlayIndex = 0; // 再生時のフレームインデックス
+var rehearsalPlayIndex = 0;
+var rehearsalAutoTimer = null;
 
 // ==== PERSIST ====
 function saveState() {
@@ -507,10 +508,16 @@ function toggleRehearsalMode(){
   rehearsalStartTime=Date.now();
   document.getElementById('rehearsal-bar').classList.add('visible');
   document.getElementById('rehearsal-btn').style.background='#ff6432';
-  // スクロールを最初に戻す
   scrollY=0; applyScroll();
   stopScroll();
   document.getElementById('rehearsal-info').textContent='REC中 - 曲に合わせてスワイプして調整';
+
+  // 0.2秒ごとに自動でフレーム記録（止まっている間奏も記録）
+  rehearsalAutoTimer=setInterval(function(){
+    if(!rehearsalMode){clearInterval(rehearsalAutoTimer);return;}
+    var t=(Date.now()-rehearsalStartTime)/1000;
+    rehearsalFrames.push({time:t, scrollY:scrollY});
+  },200);
 }
 
 function recordRehearsalFrame(){
@@ -525,6 +532,8 @@ function recordRehearsalFrame(){
 
 function saveRehearsal(){
   if(!rehearsalMode)return;
+  // オートタイマー停止
+  if(rehearsalAutoTimer){clearInterval(rehearsalAutoTimer);rehearsalAutoTimer=null;}
   rehearsalFrames.push({time:(Date.now()-rehearsalStartTime)/1000, scrollY:scrollY});
   // 重複フレームを削除して整理
   var cleaned=[rehearsalFrames[0]];
@@ -551,6 +560,7 @@ function saveRehearsal(){
 }
 
 function cancelRehearsal(){
+  if(rehearsalAutoTimer){clearInterval(rehearsalAutoTimer);rehearsalAutoTimer=null;}
   rehearsalMode=false;
   rehearsalFrames=[];
   document.getElementById('rehearsal-bar').classList.remove('visible');
@@ -790,17 +800,11 @@ document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){
   var now=Date.now();
   tsHistory.push({y:cy, t:now});
   tsHistory=tsHistory.filter(function(h){return now-h.t<150;});
-  if(rehearsalMode) recordRehearsalFrame();
   applyScroll();
 },{passive:true});
 
 document.getElementById('scroll-wrap').addEventListener('touchend',function(e){
   if(document.getElementById('rec-entry').contains(e.target))return;
-  if(rehearsalMode){
-    scrollSpeed=0;
-    recordRehearsalFrame();
-  }
-  // touchend時点のscrollYを基準にリセット（ジャンプ防止）
   tscy=scrollY;
   tsHistory=[];
 },{passive:true});
