@@ -537,7 +537,17 @@ function saveRehearsal(){
   rehearsalMode=false;
   document.getElementById('rehearsal-bar').classList.remove('visible');
   updateRehearsalBadge();
-  alert('記録を保存しました！ START で再生できます。');
+
+  // デバッグ表示
+  var first=cleaned[0];
+  var last=cleaned[cleaned.length-1];
+  alert(
+    '保存完了！ フレーム数: '+cleaned.length+'\n\n'+
+    '開始: time='+first.time.toFixed(2)+'s  scrollY='+Math.round(first.scrollY)+'\n'+
+    '終了: time='+last.time.toFixed(2)+'s  scrollY='+Math.round(last.scrollY)+'\n\n'+
+    '総時間: '+(last.time-first.time).toFixed(1)+'秒\n'+
+    'スクロール量: '+Math.round(last.scrollY-first.scrollY)+'px'
+  );
 }
 
 function cancelRehearsal(){
