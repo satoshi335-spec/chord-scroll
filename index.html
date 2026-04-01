@@ -79,7 +79,7 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
 }
 
 .section-label{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:10px 0 2px;opacity:.5;display:flex;align-items:center;padding:4px 2px;cursor:pointer;touch-action:manipulation}
-.at-badge{font-size:11px;opacity:.8;margin-left:6px;background:rgba(232,69,69,0.15);border:1px solid rgba(232,69,69,0.4);padding:2px 6px;border-radius:3px;font-family:'Fira Code',monospace}
+.at-badge{font-size:11px;color:#fff;margin-left:6px;background:rgba(180,40,40,0.7);border:1px solid rgba(232,69,69,0.6);padding:2px 8px;border-radius:3px;font-family:'Fira Code',monospace;font-weight:600}
 @media (orientation:landscape){.section-label{font-size:9px;margin:5px 0 1px;opacity:.45}}
 
 /* 待機ブロック（前奏・間奏など） */
@@ -260,9 +260,9 @@ input[type=file]{display:none}
   <div class="panel-body">
     <div class="hint">
       <code>title: 曲名</code> &#183; <code>key: G</code> &#183; <code>capo: 2</code> &#183; <code>vocal: off</code><br>
-      コードは <code>[G]夏の[Em]終わり</code> / セクションは <code>[Verse]</code><br>
-      待機: <code>[Intro bars:8]</code>小節 / <code>[間奏 time:20]</code>秒<br>
-      速度: <code>[Verse speed:35]</code> → そのセクションで自動変速
+      コードは <code>[G]夏の[Em]終わり</code> の形式<br>
+      セクションをタップ&#8594;曲開始からの経過秒を入力<br>
+      <code>[&#12452;&#12531;&#12488;&#12525; at:0]</code> <code>[A&#12513;&#12525; at:16]</code> <code>[&#38291;&#22594; at:72]</code>
     </div>
     <textarea id="song-input" spellcheck="false" style="flex:3"></textarea>
     <div style="font-size:10px;color:var(--lyric-dim);margin-top:4px">&#128221; メモ（ライブ注意事項など）</div>
@@ -900,8 +900,8 @@ function deleteSong(i){if(!confirm('「'+parseSong(setlist[i].raw).title+'」を
 // ==== EDITOR ====
 function openNewSongEditor(){
   editingIndex=-1;
-  document.getElementById('editor-title').textContent='新しい曲を追加';
-  document.getElementById('song-input').value="title: 新しい曲\nkey: G\ncapo: 0\n\n[Verse]\n[G]ここに[Em]歌詞を[C]入力[D]\n\n[Chorus]\n[C]コードは[G]直前に[D]";
+  document.getElementById('editor-title').textContent='\u65b0\u3057\u3044\u66f2\u3092\u8ffd\u52a0';
+  document.getElementById('song-input').value="title: \u65b0\u3057\u3044\u66f2\nkey: G\ncapo: 0\n\n[\u30a4\u30f3\u30c8\u30ed at:0]\n\n[A\u30e1\u30ed at:16]\n[G]\u6b4c\u8a5e\u3092\u3053\u3053\u306b[Em]\u5165\u529b[C][D]\n\n[\u30b5\u30d3 at:48]\n[C]\u30b3\u30fc\u30c9\u306f[G]\u6b4c\u8a5e\u306e[Am]\u76f4\u524d\u306b[D]";
   document.getElementById('memo-input').value='';
   document.getElementById('editor-panel').classList.add('open');
 }
