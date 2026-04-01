@@ -78,7 +78,9 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
   .btn-accent{min-width:84px}
 }
 
-.section-label{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin:14px 0 4px;opacity:.7}
+.section-label{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:10px 0 2px;opacity:.45;display:flex;align-items:center}
+.at-badge{font-size:9px;opacity:.6}
+@media (orientation:landscape){.section-label{font-size:8px;margin:6px 0 1px;opacity:.4}}
 
 /* 待機ブロック（前奏・間奏など） */
 .wait-block{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 16px;margin:4px 0;border-radius:8px;background:rgba(232,69,69,0.08);border:1px solid rgba(232,69,69,0.2);cursor:pointer;touch-action:manipulation}
@@ -354,7 +356,7 @@ function tChord(c,s){if(!s)return c;return c.replace(/[A-G][b#]?/g,function(m){r
 
 // ==== PARSE ====
 function parseSong(raw) {
-  var lines=raw.split('\n'), title='曲名なし', origCapo=0, origKey='C', blocks=[], vocalOff=false;
+  var lines=raw.split('\n'), title='\u66f2\u540d\u306a\u3057', origCapo=0, origKey='C', blocks=[], vocalOff=false;
   for (var i=0;i<lines.length;i++) {
     var tl=lines[i].trim();
     if (!tl){blocks.push({type:'blank'});continue;}
@@ -365,32 +367,29 @@ function parseSong(raw) {
     if (/^vocal:\s*on/i.test(tl)){vocalOff=false;continue;}
     if (/^\[[^\]]+\]$/.test(tl)){
       var inner=tl.slice(1,-1);
-      // パラメータ抽出
+      var atMatch=inner.match(/at:([\d.]+)/i);
       var barsMatch=inner.match(/bars:(\d+)/i);
       var timeMatch=inner.match(/time:([\d.]+)/i);
       var speedMatch=inner.match(/speed:(\d+)/i);
+      var atSec=atMatch?parseFloat(atMatch[1]):-1;
       var bars=barsMatch?parseInt(barsMatch[1]):0;
       var timeSec=timeMatch?parseFloat(timeMatch[1]):0;
       var speed=speedMatch?parseInt(speedMatch[1]):0;
-      // ラベルからパラメータ部分を除去
       var label=inner
+        .replace(/\s*at:[\d.]+/i,'')
         .replace(/\s*bars:\d+/i,'')
         .replace(/\s*time:[\d.]+/i,'')
         .replace(/\s*speed:\d+/i,'')
         .trim();
-      var stripped=label.replace(/[A-G][b#]?/g,'').replace(/[mM7sus4aug°dim9\/+]/g,'');
+      var stripped=label.replace(/[A-G][b#]?/g,'').replace(/[mM7sus4aug\u00b0dim9\/+]/g,'');
       if(stripped.trim().length>0){
         if(bars>0){
-          // bars: カウントダウン待機（BPMから秒数計算）
-          blocks.push({type:'wait', label:label, bars:bars, waitMode:'bars'});
+          blocks.push({type:'wait', label:label, bars:bars, waitMode:'bars', atSec:atSec});
         } else if(timeSec>0){
-          // time: 秒数指定待機
-          blocks.push({type:'wait', label:label, timeSec:timeSec, waitMode:'time'});
-        } else if(speed>0){
-          // speed: セクション速度変更
-          blocks.push({type:'section', label:label, speed:speed});
+          blocks.push({type:'wait', label:label, timeSec:timeSec, waitMode:'time', atSec:atSec});
         } else {
-          blocks.push({type:'section', label:label, speed:0});
+          // at: 指定があれば atSection、なければ通常section
+          blocks.push({type:'section', label:label, speed:speed, atSec:atSec});
         }
         continue;
       }
@@ -446,28 +445,22 @@ function render() {
     else if(block.type==='section'){
       var el=document.createElement('div');el.className='section-label';
       el.style.cursor='pointer';
-      // ラベル本文
-      var labelText=document.createElement('span');
-      labelText.textContent=block.label;
-      el.appendChild(labelText);
-      // 秒数バッジ（speed指定がある場合）
-      if(block.speed>0){
-        var spBadge=document.createElement('span');
-        spBadge.style.cssText='margin-left:8px;font-size:10px;color:var(--capo);opacity:.8;font-family:"Fira Code",monospace';
-        spBadge.textContent='speed:'+block.speed;
-        el.appendChild(spBadge);
-        el.setAttribute('data-speed',block.speed);
-      }
-      // ⏱タップで秒数設定
-      var timeBadge=document.createElement('span');
-      timeBadge.style.cssText='margin-left:8px;font-size:10px;color:#e84545;font-family:"Fira Code",monospace;border:1px solid #e84545;padding:1px 5px;border-radius:3px';
-      timeBadge.textContent='\u23f1 \u79d2\u8a2d\u5b9a';
-      el.appendChild(timeBadge);
-      (function(blockRef, elRef, timeBadgeRef){
-        el.addEventListener('click',function(e){
-          editSectionTime(blockRef, elRef, timeBadgeRef);
+      var labelSpan=document.createElement('span');
+      labelSpan.textContent=block.label;
+      el.appendChild(labelSpan);
+      // at: 時刻バッジ（控えめに表示）
+      var atBadge=document.createElement('span');
+      atBadge.className='at-badge';
+      atBadge.textContent=block.atSec>=0?('@'+block.atSec+'s'):'\u23f1';
+      atBadge.style.cssText='margin-left:8px;font-size:10px;color:rgba(232,69,69,0.7);font-family:"Fira Code",monospace;cursor:pointer';
+      el.appendChild(atBadge);
+      if(block.speed>0) el.setAttribute('data-speed',block.speed);
+      if(block.atSec>=0) el.setAttribute('data-at',block.atSec);
+      (function(blockRef, atBadgeRef){
+        el.addEventListener('click',function(){
+          editSectionAt(blockRef, atBadgeRef);
         });
-      })(block, el, timeBadge);
+      })(block, atBadge);
       content.appendChild(el);
     }
     else if(block.type==='wait'){
@@ -542,31 +535,28 @@ function render() {
   activeLine=-1;resetScroll();saveState();bindLineTap();
 }
 
-// ==== WAIT BLOCK 秒数編集 ====
-function editSectionTime(block, elRef, timeBadgeRef){
-  var current = block.timeSec||0;
-  var newVal = prompt('['+block.label+'] \u306e\u5f85\u6a5f\u79d2\u6570\u3092\u5165\u529b\uff08\u30bc\u30ed\u3067\u5f85\u6a5f\u306a\u3057\uff09', String(current||''));
+// ==== セクション経過時間編集 ====
+function editSectionAt(block, atBadgeRef){
+  var current=block.atSec>=0?block.atSec:'';
+  var newVal=prompt(block.label+' \u306e\u66f2\u958b\u59cb\u304b\u3089\u306e\u7d4c\u904e\u79d2\u6570\u3092\u5165\u529b\uff08\u7a7a\u6b04\u3067\u524a\u9664\uff09',String(current));
   if(newVal===null)return;
-  var num = parseFloat(newVal)||0;
-  var song = setlist[currentIndex];
-  var oldLine, newLine;
-  if(num>0){
-    oldLine = '['+block.label+']';
-    newLine = '['+block.label+' time:'+num+']';
-    song.raw = song.raw.replace(oldLine, newLine);
-    block.timeSec = num;
-    timeBadgeRef.textContent = '\u23f1 '+num+'\u79d2';
-    timeBadgeRef.style.background = 'rgba(232,69,69,0.15)';
+  var song=setlist[currentIndex];
+  var num=parseFloat(newVal);
+  var oldLabel='['+block.label+(block.atSec>=0?' at:'+block.atSec:'')+']';
+  if(!isNaN(num)&&num>=0){
+    var newLabel='['+block.label+' at:'+num+']';
+    song.raw=song.raw.replace(oldLabel,newLabel);
+    block.atSec=num;
+    atBadgeRef.textContent='@'+num+'s';
+    atBadgeRef.closest('.section-label').setAttribute('data-at',num);
   } else {
-    oldLine = '['+block.label+' time:'+(block.timeSec||0)+']';
-    newLine = '['+block.label+']';
-    song.raw = song.raw.replace(oldLine, newLine);
-    block.timeSec = 0;
-    timeBadgeRef.textContent = '\u23f1 \u79d2\u8a2d\u5b9a';
-    timeBadgeRef.style.background = '';
+    var newLabel2='['+block.label+']';
+    song.raw=song.raw.replace(oldLabel,newLabel2);
+    block.atSec=-1;
+    atBadgeRef.textContent='\u23f1';
+    atBadgeRef.closest('.section-label').removeAttribute('data-at');
   }
   saveState();
-  render();
 }
 
 function editWaitBlock(block, wlabelEl, wbEl){
@@ -741,7 +731,9 @@ function jumpToLine(idx){
 }
 
 // ==== SCROLL ====
-function resetScroll(){scrollY=0;applyScroll();stopScroll();}
+var songStartTime=0; // STARTを押した時刻
+var lastCheckedAt=-1;
+function resetScroll(){scrollY=0;lastCheckedAt=-1;applyScroll();stopScroll();}
 function applyScroll(){
   var c=document.getElementById('scroll-content'),w=document.getElementById('scroll-wrap');
   var max=Math.max(0,c.scrollHeight-w.clientHeight);
@@ -758,6 +750,7 @@ function stopScroll(){
 }
 function toggleScroll(){
   if(scrollSpeed>0||rafId){stopScroll();return;}
+  songStartTime=Date.now();
   if(!currentSpeedTarget)currentSpeedTarget=40;
   scrollSpeed=currentSpeedTarget;
   document.getElementById('play-btn').textContent='\u23f8 STOP';
@@ -770,10 +763,32 @@ function scrollFrame(ts){
   scrollY+=scrollSpeed*dt;
   applyScroll();
   checkSpeedSections();
+  checkAtSections();
   var c=document.getElementById('scroll-content'),w=document.getElementById('scroll-wrap');
   if(scrollY>=c.scrollHeight-w.clientHeight){stopScroll();return;}
   if(checkWaitBlocks())return;
   rafId=requestAnimationFrame(scrollFrame);
+}
+
+// at: セクション監視 - 経過時間になったらそのセクションに自動ジャンプ
+function checkAtSections(){
+  var elapsed=(Date.now()-songStartTime)/1000;
+  var labels=document.querySelectorAll('.section-label[data-at]');
+  for(var i=labels.length-1;i>=0;i--){
+    var atSec=parseFloat(labels[i].getAttribute('data-at'));
+    if(elapsed>=atSec&&atSec>lastCheckedAt){
+      lastCheckedAt=atSec;
+      // このセクションの直後の行にジャンプ
+      var nextEl=labels[i].nextElementSibling;
+      if(nextEl&&nextEl.classList.contains('song-line')){
+        var wrap=document.getElementById('scroll-wrap');
+        var lr=nextEl.getBoundingClientRect();
+        var wr=wrap.getBoundingClientRect();
+        scrollY=Math.max(0,scrollY+(lr.top-wr.top)-wr.height*0.28);
+      }
+      break;
+    }
+  }
 }
 // タッチスクロール
 var tsy=0, tscy=0, tsHistory=[];
