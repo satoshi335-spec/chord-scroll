@@ -516,28 +516,27 @@ function toggleRehearsalMode(){
 function recordRehearsalFrame(){
   if(!rehearsalMode)return;
   var t=(Date.now()-rehearsalStartTime)/1000;
-  // tsHistoryから速度を平滑計算
-  var spd=0;
-  if(tsHistory&&tsHistory.length>=2){
-    var oldest=tsHistory[0];
-    var newest=tsHistory[tsHistory.length-1];
-    var dy=oldest.y-newest.y; // 上スワイプ（下へスクロール）が正
-    var dtt=(newest.t-oldest.t)/1000;
-    if(dtt>0&&dy>0) spd=Math.min(200,Math.round(dy/dtt));
+  var last=rehearsalFrames.length>0?rehearsalFrames[rehearsalFrames.length-1]:null;
+  // 位置が変わった時だけ記録（同じ位置は重複させない）
+  if(!last||Math.abs(last.scrollY-scrollY)>0.5||last.time===t){
+    rehearsalFrames.push({time:t, scrollY:scrollY});
   }
-  rehearsalFrames.push({time:t, scrollY:scrollY, speed:spd});
 }
 
 function saveRehearsal(){
   if(!rehearsalMode)return;
-  // 最終フレームを記録
-  rehearsalFrames.push({time:(Date.now()-rehearsalStartTime)/1000, scrollY:scrollY, speed:0});
-  saveRehearsalData(currentIndex, rehearsalFrames);
+  rehearsalFrames.push({time:(Date.now()-rehearsalStartTime)/1000, scrollY:scrollY});
+  // 重複フレームを削除して整理
+  var cleaned=[rehearsalFrames[0]];
+  for(var i=1;i<rehearsalFrames.length;i++){
+    var prev=cleaned[cleaned.length-1];
+    var cur=rehearsalFrames[i];
+    if(cur.time>prev.time) cleaned.push(cur);
+  }
+  saveRehearsalData(currentIndex, cleaned);
   rehearsalMode=false;
   document.getElementById('rehearsal-bar').classList.remove('visible');
-  document.getElementById('rehearsal-btn').style.background='';
-  // 保存確認
-  document.getElementById('rehearsal-info').textContent='REC中 - 曲に合わせてスワイプして調整';
+  updateRehearsalBadge();
   alert('記録を保存しました！ START で再生できます。');
 }
 
@@ -545,30 +544,34 @@ function cancelRehearsal(){
   rehearsalMode=false;
   rehearsalFrames=[];
   document.getElementById('rehearsal-bar').classList.remove('visible');
-  document.getElementById('rehearsal-btn').style.background='';
+  updateRehearsalBadge();
 }
 
-// リハーサル再生 - scrollFrameから呼ばれる
+// リハーサル再生：位置を時間で補間してセット（速度計算不要）
 function applyRehearsalPlayback(elapsed){
   var frames=loadRehearsalData(currentIndex);
-  if(!frames||!frames.length)return false;
-  if(rehearsalPlayIndex>=frames.length-1){stopScroll();return true;}
-  // elapsedに対応するフレームへ進める
-  while(rehearsalPlayIndex<frames.length-1&&frames[rehearsalPlayIndex+1].time<=elapsed){
+  if(!frames||frames.length<2)return false;
+
+  // 最終フレームを超えたら終了
+  if(elapsed>=frames[frames.length-1].time){
+    scrollY=frames[frames.length-1].scrollY;
+    applyScroll();
+    stopScroll();
+    return true;
+  }
+
+  // elapsedに対応するフレームを探す
+  while(rehearsalPlayIndex<frames.length-2&&frames[rehearsalPlayIndex+1].time<=elapsed){
     rehearsalPlayIndex++;
   }
+
   var f=frames[rehearsalPlayIndex];
-  var f2=rehearsalPlayIndex+1<frames.length?frames[rehearsalPlayIndex+1]:null;
-  if(f2&&f2.time>f.time){
-    var ratio=(elapsed-f.time)/(f2.time-f.time);
-    ratio=Math.max(0,Math.min(1,ratio));
-    scrollY=f.scrollY+(f2.scrollY-f.scrollY)*ratio;
-    // 速度は上限200・下限0に制限
-    scrollSpeed=Math.max(0,Math.min(200,f.speed+(f2.speed-f.speed)*ratio));
-  } else {
-    scrollY=f.scrollY;
-    scrollSpeed=Math.max(0,Math.min(200,f.speed));
-  }
+  var f2=frames[rehearsalPlayIndex+1];
+
+  // 2フレーム間を線形補間
+  var ratio=(elapsed-f.time)/(f2.time-f.time);
+  ratio=Math.max(0,Math.min(1,ratio));
+  scrollY=f.scrollY+(f2.scrollY-f.scrollY)*ratio;
   applyScroll();
   return true;
 }
@@ -734,16 +737,18 @@ function toggleScroll(){
 function scrollFrame(ts){
   if(!lastTs)lastTs=ts;
   var dt=(ts-lastTs)/1000;lastTs=ts;
-  // リハーサル再生モード
+  // リハーサル再生モード（位置補間）
   var frames=loadRehearsalData(currentIndex);
-  if(frames&&frames.length>0&&!rehearsalMode){
+  if(frames&&frames.length>=2&&!rehearsalMode){
     var elapsed=(Date.now()-rehearsalStartTime)/1000;
     if(applyRehearsalPlayback(elapsed)){
-      document.getElementById('speed-display').textContent=Math.round(scrollSpeed)||'—';
       rafId=requestAnimationFrame(scrollFrame);
       return;
     }
+    // 終了
+    return;
   }
+  // 通常スクロール
   scrollY+=scrollSpeed*dt;applyScroll();
   var c=document.getElementById('scroll-content'),w=document.getElementById('scroll-wrap');
   if(scrollY>=c.scrollHeight-w.clientHeight){stopScroll();return;}
