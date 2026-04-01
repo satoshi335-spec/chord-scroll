@@ -461,7 +461,7 @@ function render() {
       // ⏱タップで秒数設定
       var timeBadge=document.createElement('span');
       timeBadge.style.cssText='margin-left:8px;font-size:10px;color:#e84545;font-family:"Fira Code",monospace;border:1px solid #e84545;padding:1px 5px;border-radius:3px';
-      timeBadge.textContent='⏱ 秒設定';
+      timeBadge.textContent='\u23f1 \u79d2\u8a2d\u5b9a';
       el.appendChild(timeBadge);
       (function(blockRef, elRef, timeBadgeRef){
         el.addEventListener('click',function(e){
@@ -480,8 +480,8 @@ function render() {
         wb.setAttribute('data-time','0');
       }
       var waitDesc=block.waitMode==='time'
-        ? block.label+' · '+block.timeSec+'秒'
-        : block.label+' · '+block.bars+'小節';
+        ? block.label+' \u00b7 '+block.timeSec+'\u79d2'
+        : block.label+' \u00b7 '+block.bars+'\u5c0f\u7bc0';
 
       // 上段：ラベル＋編集ボタン
       var wtop=document.createElement('div');
@@ -489,7 +489,7 @@ function render() {
       var wlabel=document.createElement('div');wlabel.className='wait-label';
       wlabel.textContent=waitDesc;
       var wedit=document.createElement('button');
-      wedit.textContent='秒数変更';
+      wedit.textContent='\u79d2\u6570\u5909\u66f4';
       wedit.style.cssText='background:#2a2a30;border:1px solid #e84545;color:#e84545;font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;touch-action:manipulation;font-family:"Fira Code",monospace;flex-shrink:0';
       (function(blockRef, wlabelRef, wbRef){
         wedit.addEventListener('click',function(e){
@@ -545,35 +545,34 @@ function render() {
 // ==== WAIT BLOCK 秒数編集 ====
 function editSectionTime(block, elRef, timeBadgeRef){
   var current = block.timeSec||0;
-  var newVal = prompt('['+block.label+'] の待機秒数を入力\n（0または空欄で待機なし）', String(current||''));
+  var newVal = prompt('['+block.label+'] \u306e\u5f85\u6a5f\u79d2\u6570\u3092\u5165\u529b\uff08\u30bc\u30ed\u3067\u5f85\u6a5f\u306a\u3057\uff09', String(current||''));
   if(newVal===null)return;
   var num = parseFloat(newVal)||0;
   var song = setlist[currentIndex];
-
+  var oldLine, newLine;
   if(num>0){
-    // 通常セクション → time:付きwaitブロックに変換
-    var oldLine = '['+block.label+']';
-    var newLine = '['+block.label+' time:'+num+']';
+    oldLine = '['+block.label+']';
+    newLine = '['+block.label+' time:'+num+']';
     song.raw = song.raw.replace(oldLine, newLine);
     block.timeSec = num;
-    timeBadgeRef.textContent = '⏱ '+num+'秒';
+    timeBadgeRef.textContent = '\u23f1 '+num+'\u79d2';
     timeBadgeRef.style.background = 'rgba(232,69,69,0.15)';
   } else {
-    // 待機時間をクリア
-    var oldLine2 = '['+block.label+' time:'+(block.timeSec||0)+']';
-    var newLine2 = '['+block.label+']';
-    song.raw = song.raw.replace(oldLine2, newLine2);
+    oldLine = '['+block.label+' time:'+(block.timeSec||0)+']';
+    newLine = '['+block.label+']';
+    song.raw = song.raw.replace(oldLine, newLine);
     block.timeSec = 0;
-    timeBadgeRef.textContent = '⏱ 秒設定';
+    timeBadgeRef.textContent = '\u23f1 \u79d2\u8a2d\u5b9a';
     timeBadgeRef.style.background = '';
   }
   saveState();
-  // 再描画して確実に反映
   render();
 }
+
+function editWaitBlock(block, wlabelEl, wbEl){
   var current = block.waitMode==='time' ? block.timeSec : block.bars;
-  var unit = block.waitMode==='time' ? '秒' : '小節';
-  var newVal = prompt(block.label+' の時間を入力（'+unit+'）', String(current));
+  var unit = block.waitMode==='time' ? '\u79d2' : '\u5c0f\u7bc0';
+  var newVal = prompt(block.label+' \u306e\u6642\u9593\u3092\u5165\u529b\uff08'+unit+'\uff09', String(current));
   if(newVal===null)return;
   var num = parseFloat(newVal);
   if(isNaN(num)||num<0)return;
@@ -591,8 +590,8 @@ function editSectionTime(block, elRef, timeBadgeRef){
   song.raw = song.raw.replace(oldPattern, newPattern);
   saveState();
   var desc = block.waitMode==='time'
-    ? block.label+' · '+num+'秒'
-    : block.label+' · '+num+'小節';
+    ? block.label+' '+num+'\u79d2'
+    : block.label+' '+num+'\u5c0f\u7bc0';
   wlabelEl.textContent = desc;
   wbEl.querySelector('.wait-countdown').textContent = num;
   wbEl.setAttribute(block.waitMode==='time'?'data-time':'data-bars', num);
