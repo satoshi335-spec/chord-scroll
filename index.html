@@ -557,9 +557,14 @@ function render() {
   // 画像スクロールモード
   if(song.imageKey){
     document.getElementById('song-title').textContent=song.title||'\u753b\u50cf\u8b5c\u9762';
+    // 画像モードでは使えないボタンをグレーアウト
+    ['karaoke-btn','vocal-btn','bass-btn'].forEach(function(id){
+      var b=document.getElementById(id);
+      if(b){b.style.opacity='0.3';b.style.pointerEvents='none';}
+    });
     document.getElementById('key-display').textContent='-';
+    document.getElementById('capo-display').textContent='-';
     document.getElementById('fs-badge').textContent='-';
-    updateCapoDisplay();
     var memoBar=document.getElementById('memo-bar');
     if(song.memo){document.getElementById('memo-text').textContent=song.memo;memoBar.style.display='block';}
     else{memoBar.style.display='none';}
@@ -584,6 +589,11 @@ function render() {
     saveState();
     return;
   }
+  // 通常モード：ボタンを元に戻す
+  ['karaoke-btn','vocal-btn','bass-btn'].forEach(function(id){
+    var b=document.getElementById(id);
+    if(b){b.style.opacity='';b.style.pointerEvents='';}
+  });
   transpose=song.transpose||0;
   var p=parseSong(song.raw);
   capo=(song.capo!==null&&song.capo!==undefined)?song.capo:p.origCapo;
