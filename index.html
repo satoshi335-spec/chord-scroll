@@ -387,6 +387,12 @@ duration: 4:32
 
     <!-- 解析ボタン -->
     <div id="scan-analyze-wrap" style="display:none;width:100%;max-width:480px;display:none;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0">
+        <label style="font-size:12px;color:var(--lyric-dim);display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="chords-only-check" style="width:16px;height:16px">
+          <span>コードのみ（歌詞なし）モード ※著作権対策</span>
+        </label>
+      </div>
       <button class="btn btn-blue" id="scan-analyze-btn" onclick="startScanAnalysis()" style="width:100%;padding:10px;font-size:14px">
         &#9654; まとめてAI解析（<span id="scan-count">0</span>枚）
       </button>
@@ -1386,11 +1392,12 @@ async function startScanAnalysis(){
   for(var i=0;i<scanFiles.length;i++){
     prog.textContent=(i+1)+'/'+scanFiles.length+'\u679a\u76ee\u89e3\u6790\u4e2d...';
     var f=scanFiles[i];
+    var chordsOnly=document.getElementById('chords-only-check')&&document.getElementById('chords-only-check').checked;
     try{
       var resp=await fetch('/api/scan',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({base64:f.base64,mediaType:f.mediaType,fileType:f.fileType})
+        body:JSON.stringify({base64:f.base64,mediaType:f.mediaType,fileType:f.fileType,chordsOnly:chordsOnly})
       });
       var responseText=await resp.text();
       var data;
