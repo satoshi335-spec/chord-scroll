@@ -11,7 +11,7 @@ module.exports = async function handler(req, res) {
   const { base64, mediaType, fileType } = req.body;
   if (!base64 || !mediaType) return res.status(400).json({ error: 'Missing data' });
 
-  const prompt = 'このファイルはギターのコード譜です。コードと歌詞を以下の形式のテキストに変換してください。\n\n出力形式（必ずこの形式のみ）:\ntitle: 曲名（わかれば）\nkey: キー（わかれば、例: F）\ncapo: カポ番号（わかれば）\n\n[セクション名]\n[コード]歌詞[コード]歌詞...\n\nルール:\n- コードは必ず歌詞の中に埋め込む。コードを歌詞の後（下の行）に出力してはいけない\n- コードが歌詞の上にある場合：対応する歌詞の文字の直前に [コード] を埋め込む\n- コードが歌詞の下にある場合：その歌詞の先頭または対応する位置に [コード] を埋め込む\n- 【絶対禁止】歌詞行の次の行にコードだけを並べること。必ず歌詞の中に埋め込む\n- 例（コードが上）: Bbが行頭、Cが「花」の上 → [Bb]すみれの[C]花時計\n- 例（コードが下）: 歌詞「踊るまわるフロア」の下にF#m B C#m → [F#m]踊るまわる[B]フロア[C#m]\n- 歌詞がなくコードのみの行は [Fsus4] [F] のように並べる\n- セクション（Verse/Chorus/間奏等）は [セクション名] で囲む\n- 複数ページある場合はすべて変換する\n- 余計な説明文は不要。変換結果のみ出力する';
+  const prompt = 'このファイルはギターのコード譜です。コードと歌詞を以下の形式のテキストに変換してください。\n\n出力形式（必ずこの形式のみ）:\ntitle: 曲名（わかれば）\nkey: キー（わかれば、例: A）\ncapo: カポ番号（わかれば）\n\n[セクション名]\n[コード]歌詞[コード]歌詞...\n\nルール:\n- コードは必ず歌詞の中に埋め込む。コードを歌詞の上下どちらに別行で出力してはいけない\n- コードが歌詞の上に書かれている場合、そのコードが上にある歌詞の文字の直前に [コード] を挿入する\n  例: 「A E D A」が「古いアルバムめくり」の上にあり、AがA、Eがル、Dがバ、Aがメの上なら → [A]古いア[E]ル[D]バ[A]めくり\n- 位置が判断しにくい場合は行頭にコードをまとめてよい\n  例: [A][E][D][A]古いアルバムめくり\n- 歌詞がなくコードのみの行は [A] [B7] [D] のように並べる\n- セクション（Verse/Chorus/間奏等）は [セクション名] で囲む\n- 複数ページある場合はすべて変換する\n- 余計な説明文は不要。変換結果のみ出力する';
 
   const contentBlock = (fileType === 'pdf')
     ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
@@ -27,7 +27,7 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
+        max_tokens: 4000,
         messages: [{
           role: 'user',
           content: [ contentBlock, { type: 'text', text: prompt } ]
@@ -43,10 +43,50 @@ module.exports = async function handler(req, res) {
     const data = await response.json();
     if (data.error) return res.status(500).json({ error: data.error.message });
 
-    const text = data.content.map(function(b) { return b.text || ''; }).join('').trim();
+    const raw = data.content.map(function(b) { return b.text || ''; }).join('').trim();
+
+    // 後処理：コードが歌詞の下にある場合を修正
+    const text = fixChordOrder(raw);
     return res.status(200).json({ result: text });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 };
+
+// コードが歌詞の下に来ている行を検出して前の歌詞行に統合する
+function fixChordOrder(text) {
+  const lines = text.split('\n');
+  const result = [];
+  const CHORD_LINE = /^(\[[A-G][^\]]*\]\s*)+$/;  // [G] [Em] [C] のような行
+  const BARE_CHORD_LINE = /^([A-G][b#]?[^\s\[\]]*\s+)*[A-G][b#]?[^\s\[\]]*\s*$/; // G Em C D のような行
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
+
+    // 現在行が歌詞行（コードを含まないか、歌詞とコードが混在）
+    // 次の行がコードのみの行 → 次の行のコードを現在行の先頭に移動
+    if (line && nextLine && isBareChordOnlyLine(nextLine) && !isBareChordOnlyLine(line) && !isMetaLine(line)) {
+      // 次の行のコードを [ ] 形式に変換して現在行の先頭に付ける
+      const chords = nextLine.trim().split(/\s+/).filter(Boolean);
+      const chordPrefix = chords.map(c => '[' + c + ']').join(' ');
+      result.push(chordPrefix + ' ' + line);
+      i++; // 次の行をスキップ
+    } else {
+      result.push(lines[i]);
+    }
+  }
+  return result.join('\n');
+}
+
+function isBareChordOnlyLine(line) {
+  if (!line || line.startsWith('[') || line.startsWith('title:') || line.startsWith('key:') || line.startsWith('capo:')) return false;
+  // スペース区切りのコード名のみで構成されているか
+  const tokens = line.trim().split(/\s+/);
+  return tokens.length > 0 && tokens.every(t => /^[A-G][b#]?(m|maj|min|dim|aug|sus|add|M)?[0-9]?(\/[A-G][b#]?)?$/.test(t));
+}
+
+function isMetaLine(line) {
+  return /^(title:|key:|capo:|duration:|vocal:|\[)/.test(line.trim());
+}
