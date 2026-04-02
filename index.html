@@ -1028,7 +1028,7 @@ function jumpToLine(idx){
 // ==== SCROLL ====
 var songStartTime=0; // STARTを押した時刻
 var lastCheckedAt=-1;
-function resetScroll(){scrollY=0;lastCheckedAt=-1;applyScroll();stopScroll();}
+function resetScroll(){scrollY=0;lastCheckedAt=-1;scrollPausedAt=0;songStartTime=Date.now();applyScroll();stopScroll();}
 function applyScroll(){
   var c=document.getElementById('scroll-content'),w=document.getElementById('scroll-wrap');
   var max=Math.max(0,c.scrollHeight-w.clientHeight);
@@ -1036,27 +1036,31 @@ function applyScroll(){
   c.style.transform='translateY('+(-scrollY)+'px)';
   updateHighlight();
 }
+var scrollPausedAt=0; // 一時停止した時の経過時間
+
 function stopScroll(){
   scrollSpeed=0;
   if(rafId){cancelAnimationFrame(rafId);rafId=null;}
   lastTs=null;
+  scrollPausedAt=(Date.now()-songStartTime)/1000; // 停止時の経過時間を記録
   document.getElementById('play-btn').textContent='\u25b6 START';
   document.getElementById('speed-display').textContent='\u2014';
   document.getElementById('time-display').style.display='none';
 }
 function toggleScroll(){
   if(scrollSpeed>0||rafId){stopScroll();return;}
-  songStartTime=Date.now();
-  lastCheckedAt=-1;
+  // 再開時は停止位置から継続（scrollYはそのまま）
+  // songStartTimeを「現在 - 停止時の経過時間」に設定して時計を継続
+  songStartTime=Date.now()-scrollPausedAt*1000;
   if(!currentSpeedTarget)currentSpeedTarget=40;
   scrollSpeed=currentSpeedTarget;
   document.getElementById('play-btn').textContent='\u23f8 STOP';
   document.getElementById('speed-display').textContent=String(currentSpeedTarget);
   // duration表示
-  var p=parseSong(setlist[currentIndex].raw);
+  var p=parseSong((setlist[currentIndex]||{}).raw||'');
   if(p.duration>0){
     document.getElementById('time-display').style.display='inline';
-    updateTimeDisplay(0, p.duration);
+    updateTimeDisplay(scrollPausedAt, p.duration);
   }
   lastTs=null;rafId=requestAnimationFrame(scrollFrame);
 }
