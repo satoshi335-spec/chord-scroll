@@ -213,6 +213,7 @@ input[type=file]{display:none}
   <button class="btn" id="vocal-btn" onclick="toggleVocalMode()" title="ボーカルモード">&#127897; <span id="vocal-indicator">VOCAL</span></button>
   <button class="btn" id="bass-btn" onclick="toggleBassMode()" title="ベースモード">&#127928; BASS</button>
   <button class="btn" id="edit-btn" onclick="editCurrentSong()">&#9998;</button>
+  <button class="btn" onclick="printSong()" title="PDF/印刷">&#128438;</button>
   <span id="time-display" style="font-family:'Fira Code',monospace;font-size:11px;color:var(--lyric-dim);min-width:60px;text-align:right;display:none"></span>
 </div>
 
@@ -259,6 +260,7 @@ input[type=file]{display:none}
     <button class="btn" style="flex:1" onclick="exportData()">&#128229; 書き出し</button>
     <button class="btn" style="flex:1" onclick="document.getElementById('import-input').click()">&#128228; 読み込み</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(this)">
+    <button class="btn" style="flex:1" onclick="printAllSongs()">&#128438; 印刷</button>
     <button class="btn" style="flex:1" onclick="openHelpPanel()">&#10067; 使い方</button>
   </div>
 </div>
@@ -444,7 +446,7 @@ function loadState() {
 var NS=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],NF=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 function nIdx(n){var i=NS.indexOf(n);return i>=0?i:NF.indexOf(n);}
 function tNote(n,s){var i=nIdx(n);return i<0?n:NS[(i+s+120)%12];}
-function tChord(c,s){if(!s)return c;return c.replace(/[A-G][b#]?/g,function(m){return tNote(m,s);});}
+function tChord(c,s){if(!s)return c;return c.replace(/[A-G][b#]/g,function(m){return tNote(m,s);}).replace(/[A-G](?![b#])/g,function(m){return tNote(m,s);});}
 
 // ==== PARSE ====
 function parseSong(raw) {
@@ -757,12 +759,109 @@ function checkSpeedSections(){
     }
   }
 }
-// ==== BASS MODE ====
+// ==== PRINT / PDF ====
+function buildSongHtml(song, idx){
+  var p=parseSong(song.raw);
+  var tr=song.transpose||0;
+  var lines=[];
+  lines.push('<h1>'+(idx!==undefined?'<span class="num">'+(idx+1)+'.</span> ':'')+escH(p.title)+'</h1>');
+  var meta=[];
+  if(p.origKey) meta.push('KEY: '+escH(tr===0?p.origKey:tNote((p.origKey.match(/^[A-G][b#]?/)||['C'])[0],tr)));
+  var c=(song.capo!==null&&song.capo!==undefined)?song.capo:p.origCapo;
+  if(c>0) meta.push('CAPO: '+c);
+  if(p.duration>0) meta.push('TIME: '+fmtTime(p.duration));
+  if(meta.length) lines.push('<div class="meta">'+meta.join(' &nbsp;|&nbsp; ')+'</div>');
+  if(song.memo) lines.push('<div class="memo">&#128221; '+escH(song.memo)+'</div>');
+  lines.push('<hr>');
+  p.blocks.forEach(function(block){
+    if(block.type==='blank'){
+      lines.push('<div class="blank"></div>');
+    } else if(block.type==='section'||block.type==='wait'){
+      lines.push('<div class="section">'+escH(block.label)+'</div>');
+    } else if(block.type==='chordline'){
+      var chordParts='', lyricParts='';
+      block.tokens.forEach(function(tok){
+        var ch=tok.chord?tChord(tok.chord,tr):'';
+        var ly=tok.lyric||'';
+        chordParts+='<span class="cp">'+escH(ch)+'</span>';
+        lyricParts+='<span class="lp">'+escH(ly)+'</span>';
+      });
+      lines.push('<div class="line"><div class="chords">'+chordParts+'</div><div class="lyrics">'+lyricParts+'</div></div>');
+    } else if(block.type==='lyricline'){
+      lines.push('<div class="line"><div class="chords"></div><div class="lyrics">'+escH(block.text)+'</div></div>');
+    }
+  });
+  return lines.join('\n');
+}
+
+function printHtmlPage(bodyContent, title){
+  var html='<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">'
+    +'<meta name="viewport" content="width=device-width,initial-scale=1">'
+    +'<title>'+escH(title)+'</title>'
+    +'<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">'
+    +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:"Noto Sans JP","Helvetica Neue",sans-serif;background:#fff;color:#111;padding:20px;max-width:800px;margin:0 auto}'
+    +'h1{font-size:20px;font-weight:700;margin-bottom:5px;display:flex;align-items:baseline;gap:8px}'
+    +'.num{font-size:13px;color:#999;font-family:monospace}'
+    +'.meta{font-size:12px;color:#666;margin-bottom:3px;font-family:monospace}'
+    +'.memo{font-size:12px;color:#886;background:#fffbe6;padding:3px 8px;border-radius:4px;margin-bottom:5px}'
+    +'hr{border:none;border-top:1px solid #ddd;margin:8px 0}'
+    +'.section{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#c44;margin:12px 0 1px;font-weight:700}'
+    +'.blank{height:8px}'
+    +'.page-break{page-break-after:always;margin:30px 0 0;border-top:2px dashed #ccc}'
+    +'.line{margin-bottom:1px}'
+    +'.chords{display:flex;flex-wrap:wrap;min-height:14px}'
+    +'.lyrics{display:flex;flex-wrap:wrap;font-size:15px;line-height:1.4}'
+    +'.cp{font-size:11px;color:#b80;font-family:monospace;font-weight:700;min-width:1em;margin-right:2px;white-space:pre}'
+    +'.lp{font-size:15px;white-space:pre}'
+    +'#print-btn{position:fixed;top:12px;right:12px;background:#e84545;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:14px;cursor:pointer;z-index:99;font-family:sans-serif}'
+    +'@media print{#print-btn{display:none}}'
+    +'</style>'
+    +'</head><body>'
+    +'<button id="print-btn" onclick="window.print()">&#128438; PDF / \u5370\u5237</button>'
+    +bodyContent
+    +'</body></html>';
+  var blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  window.open(url,'_blank');
+  setTimeout(function(){URL.revokeObjectURL(url);},60000);
+}
+
+function printSong(){
+  var song=setlist[currentIndex];
+  if(!song)return;
+  var p=parseSong(song.raw);
+  printHtmlPage(buildSongHtml(song), p.title);
+}
+
+function printSongAt(i){
+  var song=setlist[i];
+  if(!song)return;
+  var p=parseSong(song.raw);
+  printHtmlPage(buildSongHtml(song), p.title);
+}
+
+function printAllSongs(){
+  if(!setlist.length)return;
+  var parts=[];
+  setlist.forEach(function(song,i){
+    if(i>0) parts.push('<div class="page-break"></div>');
+    parts.push(buildSongHtml(song, i));
+  });
+  closeSetlist();
+  printHtmlPage(parts.join('\n'), '\u30bb\u30c3\u30c8\u30ea\u30b9\u30c8 ('+setlist.length+'\u66f2)');
+}
+
+function escH(s){
+  if(!s)return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 function rootNote(chord){
-  // スラッシュコード F/C → C（ベース音）
+  // スラッシュコード F/C → C（ベース音優先）
   var slash=chord.match(/\/([A-G][b#]?)$/);
   if(slash) return slash[1];
-  // 通常コード: 先頭のルート音を取得 Gm→G, Bbm→Bb, F#m7→F#
+  // ルート音を取得（b#を含む2文字まで） Bb→Bb, F#m7→F#, Gm→G
   var m=chord.match(/^([A-G][b#]?)/);
   return m?m[1]:chord;
 }
@@ -1011,6 +1110,7 @@ function renderSetlistPanel(){
     var actions=document.createElement('div');actions.className='item-actions';
     function mkBtn(label,cls,cb){var b=document.createElement('button');b.className='icon-btn'+(cls?' '+cls:'');b.textContent=label;b.addEventListener('click',function(e){e.stopPropagation();cb();});return b;}
     actions.appendChild(mkBtn('✏️','',function(){closeSetlist();openEditorForIndex(i);}));
+    actions.appendChild(mkBtn('🖨','',function(){printSongAt(i);}));
     actions.appendChild(mkBtn('↑','',function(){moveSong(i,-1);}));
     actions.appendChild(mkBtn('↓','',function(){moveSong(i,+1);}));
     actions.appendChild(mkBtn('🗑','del',function(){deleteSong(i);}));
