@@ -274,11 +274,10 @@ input[type=file]{display:none}
   <div class="panel-body" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;gap:0;align-items:flex-start">
 
     <div class="help-section">
-      <div class="help-title">&#9654; 基本の使い方</div>
-      <div class="help-row"><span class="help-key">&#9776;</span><span class="help-val">セットリストを開く・曲を追加</span></div>
+      <div class="help-title">&#9654; 基本操作</div>
+      <div class="help-row"><span class="help-key">&#9776;</span><span class="help-val">セットリストを開く・曲を追加・管理</span></div>
       <div class="help-row"><span class="help-key">START</span><span class="help-val">自動スクロール開始 / 停止</span></div>
       <div class="help-row"><span class="help-key">SPEED &#177;</span><span class="help-val">スクロール速度を調整</span></div>
-      <div class="help-row"><span class="help-key">TAP</span><span class="help-val">テンポを叩いてBPM計測（bars:に使用）</span></div>
       <div class="help-row"><span class="help-key">&#9198; &#9197;</span><span class="help-val">前 / 次の曲へ移動</span></div>
       <div class="help-row"><span class="help-key">行タップ</span><span class="help-val">その行にジャンプしてスクロール再開</span></div>
       <div class="help-row"><span class="help-key">スワイプ</span><span class="help-val">手動スクロール（STARTは一時停止）</span></div>
@@ -286,11 +285,13 @@ input[type=file]{display:none}
 
     <div class="help-section">
       <div class="help-title">&#127908; 表示モード</div>
-      <div class="help-row"><span class="help-key">&#127908;</span><span class="help-val">カラオケモード：現在行をハイライト</span></div>
+      <div class="help-row"><span class="help-key">&#127908;</span><span class="help-val">カラオケモード：スクロール中に現在行をハイライト</span></div>
       <div class="help-row"><span class="help-key">&#127897; VOCAL</span><span class="help-val">コード非表示・歌詞のみ大きく表示</span></div>
+      <div class="help-row"><span class="help-key">&#127928; BASS</span><span class="help-val">ベースモード：コードがルート音のみに変わる（Gm→G、F/C→C）</span></div>
       <div class="help-row"><span class="help-key">KEY &#9664;&#9654;</span><span class="help-val">移調（コードを自動変換）</span></div>
       <div class="help-row"><span class="help-key">CAPO &#9664;&#9654;</span><span class="help-val">カポ番号の表示</span></div>
       <div class="help-row"><span class="help-key">A- / A+</span><span class="help-val">文字サイズ調整</span></div>
+      <div class="help-row"><span class="help-key">&#128438;</span><span class="help-val">現在の曲をPDF/印刷用ページで開く</span></div>
     </div>
 
     <div class="help-section">
@@ -298,42 +299,44 @@ input[type=file]{display:none}
       <div class="help-code">title: &#26354;&#21517;
 key: G
 capo: 2
+duration: 4:32
 
-[&#12452;&#12531;&#12488;&#12525; at:0]
+[&#12452;&#12531;&#12488;&#12525;]
+[G][Em][C][D]
 
-[A&#12513;&#12525; at:16]
+[A&#12513;&#12525;]
 [G]&#22799;&#12398;[Em]&#32456;&#12431;&#12426;&#12395;[C]&#21531;&#12392;[D]&#27497;&#12356;&#12383;
 
-[&#12469;&#12499; at:48]
+[&#12469;&#12499;]
 [C]&#12414;&#12383;&#20250;&#12360;&#12427;[G]&#26085;&#12414;&#12391;[D]</div>
-      <div class="help-row"><span class="help-key">[G]歌詞</span><span class="help-val">コードは歌詞の直前に記入</span></div>
-      <div class="help-row"><span class="help-key">[サビ at:48]</span><span class="help-val">曲開始から48秒でここに自動ジャンプ</span></div>
-      <div class="help-row"><span class="help-key">[間奏 bars:8]</span><span class="help-val">TAPのBPMから8小節分を自動カウント</span></div>
+      <div class="help-row"><span class="help-key">[G]歌詞</span><span class="help-val">コードは歌詞の直前に [ ] で記入</span></div>
+      <div class="help-row"><span class="help-key">duration: 4:32</span><span class="help-val">演奏時間を設定→START中に経過時間を表示</span></div>
+      <div class="help-row"><span class="help-key">[間奏 bars:8]</span><span class="help-val">TAPのBPMから8小節分を自動カウント待機</span></div>
       <div class="help-row"><span class="help-key">vocal: off</span><span class="help-val">コードを非表示にして歌詞のみ表示</span></div>
     </div>
 
     <div class="help-section">
-      <div class="help-title">&#128247; スキャン機能</div>
+      <div class="help-title">&#128247; スキャン機能（AIコード譜読み込み）</div>
       <div class="help-row"><span class="help-key">1</span><span class="help-val">☰→「📷 スキャン」を開く</span></div>
       <div class="help-row"><span class="help-key">2</span><span class="help-val">カメラ撮影 / 画像選択（複数可）/ PDF</span></div>
       <div class="help-row"><span class="help-key">3</span><span class="help-val">「まとめてAI解析」をタップ</span></div>
-      <div class="help-row"><span class="help-key">4</span><span class="help-val">結果を確認・修正してセットリストに追加</span></div>
+      <div class="help-row"><span class="help-key">4</span><span class="help-val">「✏️ エディターで修正」で内容を確認・修正してから追加</span></div>
       <div class="help-note">複数ページは複数枚選択してまとめて解析できます</div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-title">&#128438; PDF・印刷出力</div>
+      <div class="help-row"><span class="help-key">topbar &#128438;</span><span class="help-val">表示中の1曲を印刷用ページで開く</span></div>
+      <div class="help-row"><span class="help-key">☰→ &#128438; 印刷</span><span class="help-val">セットリスト全曲をまとめて印刷</span></div>
+      <div class="help-row"><span class="help-key">各曲の &#128438;</span><span class="help-val">セットリストの各曲を個別に印刷</span></div>
+      <div class="help-note">印刷ページが開いたら右上の「PDF / 印刷」ボタン → iPhoneは「PDFに保存」</div>
     </div>
 
     <div class="help-section">
       <div class="help-title">&#128229; バックアップ</div>
       <div class="help-row"><span class="help-key">書き出し</span><span class="help-val">全曲データをJSONファイルで保存</span></div>
       <div class="help-row"><span class="help-key">読み込み</span><span class="help-val">JSONを読み込んで復元・追加</span></div>
-      <div class="help-note">機種変更や他のiPhoneへの移行もこれで対応できます</div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-title">&#9202; at: の使い方（経過時間自動ジャンプ）</div>
-      <div class="help-row"><span class="help-key">1</span><span class="help-val">曲を再生しながらストップウォッチで計測</span></div>
-      <div class="help-row"><span class="help-key">2</span><span class="help-val">各セクションのラベルをタップ→秒数入力</span></div>
-      <div class="help-row"><span class="help-key">3</span><span class="help-val">STARTを押すと時計スタート、自動でジャンプ</span></div>
-      <div class="help-note">少し短めに設定すると歌い始めに余裕が出ます</div>
+      <div class="help-note">機種変更や他のデバイスへの移行もこれで対応できます</div>
     </div>
 
   </div>
@@ -880,6 +883,13 @@ function toggleKaraokeMode(){
 }
 function updateHighlight(){
   if(!lineElements.length)return;
+  // カラオケモードOFF時はハイライトを全て外して終了
+  if(!karaokeMode){
+    for(var i=0;i<lineElements.length;i++) lineElements[i].classList.remove('active-line','next-line');
+    activeLine=-1;
+    document.getElementById('next-chord-bar').classList.remove('visible');
+    return;
+  }
   var wrap=document.getElementById('scroll-wrap');
   var wr=wrap.getBoundingClientRect();
   var targetY=wr.top+wr.height*0.28;
