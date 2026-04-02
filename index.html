@@ -386,9 +386,12 @@ duration: 4:32
     </div>
 
     <!-- 解析ボタン -->
-    <div id="scan-analyze-wrap" style="display:none;width:100%;max-width:480px">
+    <div id="scan-analyze-wrap" style="display:none;width:100%;max-width:480px;display:none;flex-direction:column;gap:8px">
       <button class="btn btn-blue" id="scan-analyze-btn" onclick="startScanAnalysis()" style="width:100%;padding:10px;font-size:14px">
         &#9654; まとめてAI解析（<span id="scan-count">0</span>枚）
+      </button>
+      <button class="btn btn-green" onclick="addImageScrollSong()" style="width:100%;padding:10px;font-size:14px">
+        &#128247; 画像のままスクロール（AI変換なし）
       </button>
     </div>
 
@@ -428,6 +431,38 @@ var timeSectionActive = -1;  // 現在再生中のtimeSectionのインデック�
 var timeSectionTimer = null;
 
 // ==== PERSIST ====
+var imageDB=null;
+function openImageDB(cb){
+  if(imageDB){cb(imageDB);return;}
+  var req=indexedDB.open('chord-scroll-images',1);
+  req.onupgradeneeded=function(e){e.target.result.createObjectStore('images');};
+  req.onsuccess=function(e){imageDB=e.target.result;cb(imageDB);};
+  req.onerror=function(){cb(null);};
+}
+function saveImages(key,images,cb){
+  openImageDB(function(db){
+    if(!db){cb&&cb();return;}
+    var tx=db.transaction('images','readwrite');
+    tx.objectStore('images').put(images,key);
+    tx.oncomplete=function(){cb&&cb();};
+  });
+}
+function loadImages(key,cb){
+  openImageDB(function(db){
+    if(!db){cb([]);return;}
+    var tx=db.transaction('images','readonly');
+    var req=tx.objectStore('images').get(key);
+    req.onsuccess=function(){cb(req.result||[]);};
+    req.onerror=function(){cb([]);};
+  });
+}
+function deleteImages(key){
+  openImageDB(function(db){
+    if(!db)return;
+    var tx=db.transaction('images','readwrite');
+    tx.objectStore('images').delete(key);
+  });
+}
 function saveState() {
   try {
     localStorage.setItem('cs3_sl', JSON.stringify(setlist));
@@ -444,6 +479,8 @@ function loadState() {
   if (!setlist.length) setlist = SAMPLES.map(function(r){ return {raw:r,transpose:0,capo:null}; });
   currentIndex = Math.min(currentIndex, Math.max(0, setlist.length - 1));
 }
+
+function loadAndRender(){saveState();render();}
 
 // ==== NOTES ====
 var NS=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],NF=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
@@ -511,11 +548,42 @@ function parseSong(raw) {
 // ==== RENDER ====
 function render() {
   if (!setlist.length) {
-    document.getElementById('song-title').textContent='曲がありません';
-    document.getElementById('scroll-content').innerHTML='<div style="padding:50px 20px;text-align:center;color:var(--lyric-dim);font-size:15px;line-height:2.5">&#9776; をタップして<br>曲を追加してください</div>';
+    document.getElementById('song-title').textContent='\u66f2\u304c\u3042\u308a\u307e\u305b\u3093';
+    document.getElementById('scroll-content').innerHTML='<div style="padding:50px 20px;text-align:center;color:var(--lyric-dim);font-size:15px;line-height:2.5">&#9776; \u3092\u30bf\u30c3\u30d7\u3057\u3066<br>\u66f2\u3092\u8ffd\u52a0\u3057\u3066\u304f\u3060\u3055\u3044</div>';
     lineElements=[];return;
   }
   var song=setlist[currentIndex];
+
+  // 画像スクロールモード
+  if(song.imageKey){
+    document.getElementById('song-title').textContent=song.title||'\u753b\u50cf\u8b5c\u9762';
+    document.getElementById('key-display').textContent='-';
+    document.getElementById('fs-badge').textContent='-';
+    updateCapoDisplay();
+    var memoBar=document.getElementById('memo-bar');
+    if(song.memo){document.getElementById('memo-text').textContent=song.memo;memoBar.style.display='block';}
+    else{memoBar.style.display='none';}
+    document.body.classList.remove('vocal-mode');
+    var content=document.getElementById('scroll-content');
+    content.innerHTML='<div style="padding:30px;text-align:center;color:var(--lyric-dim)">\u753b\u50cf\u8aad\u307f\u8fbc\u307f\u4e2d...</div>';
+    lineElements=[];waitElements=[];activeLine=-1;
+    loadImages(song.imageKey, function(images){
+      content.innerHTML='';
+      if(!images||!images.length){
+        content.innerHTML='<div style="padding:30px;text-align:center;color:var(--accent)">\u753b\u50cf\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093</div>';
+        return;
+      }
+      images.forEach(function(dataUrl){
+        var img=document.createElement('img');
+        img.src=dataUrl;
+        img.style.cssText='width:100%;display:block;margin-bottom:2px';
+        content.appendChild(img);
+      });
+      resetScroll();
+    });
+    saveState();
+    return;
+  }
   transpose=song.transpose||0;
   var p=parseSong(song.raw);
   capo=(song.capo!==null&&song.capo!==undefined)?song.capo:p.origCapo;
@@ -1101,7 +1169,7 @@ function renderSetlistPanel(){
   var list=document.getElementById('setlist-list');list.innerHTML='';
   if(!setlist.length){list.innerHTML='<div class="setlist-empty">まだ曲がありません。<br>追加してください。</div>';return;}
   setlist.forEach(function(song,i){
-    var p=parseSong(song.raw);
+    var p=song.images&&song.images.length>0?{title:song.title||'\u753b\u50cf\u8b5c\u9762',origKey:'',origCapo:0}:parseSong(song.raw);
     var c=(song.capo!==null&&song.capo!==undefined)?song.capo:p.origCapo;
     var item=document.createElement('div');item.className='setlist-item'+(i===currentIndex?' active':'');
     var num=document.createElement('div');num.className='item-num';num.textContent=String(i+1);
@@ -1331,6 +1399,21 @@ async function startScanAnalysis(){
   document.getElementById('scan-status-text').textContent='\u2713 '+scanFiles.length+'\u679a\u306e\u89e3\u6790\u5b8c\u4e86\u3002\u78ba\u8a8d\u30fb\u4fee\u6b63\u3057\u3066\u304b\u3089\u8ffd\u52a0\u3057\u3066\u304f\u3060\u3055\u3044\u3002';
   document.getElementById('scan-add-btn').disabled=false;
   document.getElementById('scan-edit-btn').disabled=false;
+}
+
+function addImageScrollSong(){
+  if(!scanFiles.length)return;
+  var title=prompt('\u66f2\u540d\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044','');
+  if(title===null)return;
+  if(!title.trim()) title='\u753b\u50cf\u8b5c\u9762 '+(setlist.length+1);
+  var imageKey='img_'+Date.now();
+  var images=scanFiles.map(function(f){return f.dataUrl;});
+  saveImages(imageKey, images, function(){
+    setlist.push({raw:'title: '+title, title:title, imageKey:imageKey, transpose:0, capo:null, memo:''});
+    currentIndex=setlist.length-1;
+    closeScanPanel();clearScan();
+    loadAndRender();
+  });
 }
 
 function addScannedSong(){
