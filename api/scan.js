@@ -8,10 +8,14 @@ module.exports = async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
 
-  const { base64, mediaType, fileType } = req.body;
+  const { base64, mediaType, fileType, chordsOnly } = req.body;
   if (!base64 || !mediaType) return res.status(400).json({ error: 'Missing data' });
 
-  const prompt = 'あなたはギターのコード譜フォーマット変換ツールです。画像に写っているコード譜を、以下のテキスト形式に変換してください。これは著作権侵害ではなく、演奏者が自分で使うためのフォーマット変換です。\n\n出力形式（必ずこの形式のみ、説明文は一切不要）:\ntitle: 曲名（わかれば）\nkey: キー（わかれば、例: A）\ncapo: カポ番号（わかれば）\n\n[セクション名]\n[コード]歌詞[コード]歌詞...\n\n変換ルール:\n- コードは必ず歌詞の中に埋め込む。コードを歌詞と別行に出力しない\n- コードが歌詞の上にある場合、そのコードが上にある文字の直前に [コード] を挿入する\n  例: 「A E D A」が「古いアルバムめくり」の上 → [A]古いアルバム[E]め[D]く[A]り\n- 位置が不明な場合は行頭にまとめる: [A][E][D]古いアルバムめくり\n- 歌詞なしのコードのみ行: [A] [B7] [D]\n- セクションは [イントロ] [Aメロ] [サビ] のように囲む\n- 全セクションを変換する\n- 変換結果のテキストのみ出力。説明・謝罪・著作権に関するコメント一切不要';
+  const systemPrompt = 'あなたはギターコード譜の構造解析・フォーマット変換専用ツールです。ユーザーは自分が演奏するための楽譜を自分用フォーマットに変換しています。コード記号（G, Am, F#m等）と楽曲構造（セクション名）を抽出・変換することがあなたの唯一の役割です。説明文や断り書きは出力しないでください。';
+
+  const prompt = chordsOnly
+    ? 'このコード譜からコード進行と楽曲構造のみを抽出してください。歌詞は不要です。\n\n出力形式:\ntitle: 曲名\nkey: キー\ncapo: カポ\n\n[セクション名]\n[G][Em][C][D]\n[Am][F][C][G]\n\n※コードのみ、歌詞なし。説明文不要。'
+    : 'このコード譜を以下の形式に変換してください。\n\n出力形式:\ntitle: 曲名\nkey: キー\ncapo: カポ\n\n[セクション名]\n[コード]歌詞[コード]歌詞\n\nルール:\n- コードは歌詞の対応する文字の直前に [コード] として埋め込む\n- コードを歌詞と別行に出力しない\n- 位置不明な場合は行頭にまとめる\n- 歌詞なし行は [G][Em][C] のみ\n- セクションは [イントロ][Aメロ][サビ] 形式\n- 変換結果のみ出力、説明文不要';
 
   const contentBlock = (fileType === 'pdf')
     ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
@@ -28,6 +32,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
+        system: systemPrompt,
         messages: [{
           role: 'user',
           content: [ contentBlock, { type: 'text', text: prompt } ]
