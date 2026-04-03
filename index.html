@@ -610,8 +610,8 @@ function render() {
       applyImgScale();
       applyImgInvert();
       applyImgFit();
-      // 曲ごとの速度を復元
-      if(song.speedTarget) currentSpeedTarget=song.speedTarget;
+      // 曲ごとの速度を復元（保存されていなければデフォルト40）
+      currentSpeedTarget=song.speedTarget||40;
       resetScroll();
     });
     saveState();
@@ -624,8 +624,8 @@ function render() {
   });
   showImgControls(false);
   document.getElementById('scroll-content').style.filter='';
-  // 曲ごとの速度を復元
-  if(song.speedTarget) currentSpeedTarget=song.speedTarget;
+  // 曲ごとの速度を復元（保存されていなければデフォルト40）
+  currentSpeedTarget=song.speedTarget||40;
   transpose=song.transpose||0;
   var p=parseSong(song.raw);
   capo=(song.capo!==null&&song.capo!==undefined)?song.capo:p.origCapo;
@@ -975,7 +975,10 @@ var imgScale=1.0, imgInverted=false, imgFit=true;
 
 function imgZoom(delta){
   imgScale=Math.max(0.3,Math.min(3.0,Math.round((imgScale+delta)*10)/10));
+  // ズーム操作したらフィットをOFF
+  if(delta!==0) imgFit=false;
   applyImgScale();
+  applyImgFit();
 }
 function imgZoomReset(){
   imgScale=1.0;imgInverted=false;imgFit=true;
