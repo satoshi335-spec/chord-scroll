@@ -82,7 +82,11 @@ body{background:var(--bg);color:var(--lyric);font-family:'Noto Sans JP',sans-ser
 .at-badge{font-size:11px;color:#fff;margin-left:6px;background:rgba(180,40,40,0.7);border:1px solid rgba(232,69,69,0.6);padding:2px 8px;border-radius:3px;font-family:'Fira Code',monospace;font-weight:600}
 @media (orientation:landscape){.section-label{font-size:9px;margin:5px 0 1px;opacity:.45}}
 
-/* 使い方パネル */
+/* 画像モード */
+#img-ctrl-bar.visible{display:flex!important}
+.img-inverted{filter:invert(1) hue-rotate(180deg)}
+.img-fit img{width:100%!important;transform-origin:top left}
+#scroll-content.img-mode{padding:0}
 .help-section{width:100%;margin-bottom:20px}
 .help-title{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.1em;color:var(--chord);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)}
 .help-row{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);align-items:baseline}
@@ -220,6 +224,17 @@ input[type=file]{display:none}
 <div id="next-chord-bar">
   <span class="nxt-label">NEXT</span>
   <span id="nxt-chord-text" class="nxt-chord"></span>
+</div>
+
+<!-- 画像モード専用コントロール -->
+<div id="img-ctrl-bar" style="display:none;flex-shrink:0;padding:4px 10px;background:var(--surface);border-bottom:1px solid var(--border);display:none;align-items:center;gap:8px;flex-wrap:wrap">
+  <span style="font-size:10px;color:var(--lyric-dim);letter-spacing:.05em">ZOOM</span>
+  <button class="btn" onclick="imgZoom(-0.1)" style="padding:4px 10px">－</button>
+  <span id="img-zoom-badge" style="font-family:'Fira Code',monospace;font-size:12px;color:var(--chord);min-width:36px;text-align:center">100%</span>
+  <button class="btn" onclick="imgZoom(+0.1)" style="padding:4px 10px">＋</button>
+  <button class="btn" id="img-invert-btn" onclick="toggleImgInvert()" style="padding:4px 10px" title="白黒反転">&#9680;</button>
+  <button class="btn" id="img-fit-btn" onclick="toggleImgFit()" style="padding:4px 10px" title="横幅フィット">&#8596;</button>
+  <button class="btn" onclick="imgZoomReset()" style="padding:4px 8px;font-size:11px">リセット</button>
 </div>
 
 <!-- メモバー -->
@@ -587,19 +602,30 @@ function render() {
       images.forEach(function(dataUrl){
         var img=document.createElement('img');
         img.src=dataUrl;
-        img.style.cssText='width:100%;display:block;margin-bottom:2px';
+        img.style.cssText='display:block;margin-bottom:2px;width:100%';
         content.appendChild(img);
       });
+      // 画像モードコントロール適用
+      showImgControls(true);
+      applyImgScale();
+      applyImgInvert();
+      applyImgFit();
+      // 曲ごとの速度を復元
+      if(song.speedTarget) currentSpeedTarget=song.speedTarget;
       resetScroll();
     });
     saveState();
     return;
   }
-  // 通常モード：ボタンを元に戻す
+  // 通常モード：ボタンを元に戻す・画像コントロール非表示
   ['karaoke-btn','vocal-btn','bass-btn'].forEach(function(id){
     var b=document.getElementById(id);
     if(b){b.style.opacity='';b.style.pointerEvents='';}
   });
+  showImgControls(false);
+  document.getElementById('scroll-content').style.filter='';
+  // 曲ごとの速度を復元
+  if(song.speedTarget) currentSpeedTarget=song.speedTarget;
   transpose=song.transpose||0;
   var p=parseSong(song.raw);
   capo=(song.capo!==null&&song.capo!==undefined)?song.capo:p.origCapo;
@@ -944,6 +970,49 @@ function escH(s){
   if(!s)return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+// ==== IMAGE MODE STATE ====
+var imgScale=1.0, imgInverted=false, imgFit=true;
+
+function imgZoom(delta){
+  imgScale=Math.max(0.3,Math.min(3.0,Math.round((imgScale+delta)*10)/10));
+  applyImgScale();
+}
+function imgZoomReset(){
+  imgScale=1.0;imgInverted=false;imgFit=true;
+  applyImgScale();applyImgInvert();applyImgFit();
+}
+function applyImgScale(){
+  document.getElementById('img-zoom-badge').textContent=Math.round(imgScale*100)+'%';
+  var imgs=document.querySelectorAll('#scroll-content img');
+  imgs.forEach(function(img){
+    img.style.width=(imgFit?100:Math.round(imgScale*100))+'%';
+  });
+}
+function toggleImgInvert(){
+  imgInverted=!imgInverted;applyImgInvert();
+}
+function applyImgInvert(){
+  var btn=document.getElementById('img-invert-btn');
+  var content=document.getElementById('scroll-content');
+  if(imgInverted){content.style.filter='invert(1) hue-rotate(180deg)';btn.style.background='var(--chord)';btn.style.color='#000';}
+  else{content.style.filter='';btn.style.background='';btn.style.color='';}
+}
+function toggleImgFit(){
+  imgFit=!imgFit;applyImgFit();
+}
+function applyImgFit(){
+  var btn=document.getElementById('img-fit-btn');
+  btn.style.background=imgFit?'var(--chord)':'';
+  btn.style.color=imgFit?'#000':'';
+  applyImgScale();
+}
+function showImgControls(show){
+  var bar=document.getElementById('img-ctrl-bar');
+  if(show)bar.classList.add('visible');
+  else bar.classList.remove('visible');
+}
+
+// ==== BASS MODE ====
 function rootNote(chord){
   // スラッシュコード F/C → C（ベース音優先）
   var slash=chord.match(/\/([A-G][b#]?)$/);
@@ -1147,6 +1216,11 @@ document.getElementById('scroll-wrap').addEventListener('touchend',function(e){
 function changeSpeed(d){
   currentSpeedTarget=Math.max(5,Math.min(200,currentSpeedTarget+d));
   if(scrollSpeed>0){scrollSpeed=currentSpeedTarget;document.getElementById('speed-display').textContent=String(currentSpeedTarget);}
+  // 曲ごとに速度を記憶
+  if(setlist[currentIndex]){
+    setlist[currentIndex].speedTarget=currentSpeedTarget;
+    saveState();
+  }
 }
 
 // ==== TAP TEMPO ====
