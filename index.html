@@ -1120,7 +1120,9 @@ document.getElementById('scroll-wrap').addEventListener('touchstart',function(e)
   tsy=e.touches[0].clientY;
   tscy=scrollY;
   tsHistory=[{y:tsy, t:Date.now()}];
-  if(scrollSpeed>0) stopScroll();
+  if(scrollSpeed>0){
+    stopScroll();
+  }
 },{passive:true});
 
 document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){
@@ -1133,6 +1135,12 @@ document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){
 },{passive:true});
 
 document.getElementById('scroll-wrap').addEventListener('touchend',function(e){
+  var dy=Math.abs(scrollY-tscy);
+  // スワイプ距離が小さい（タップ）かつ停止中なら再開
+  if(dy<8&&scrollSpeed===0&&currentSpeedTarget>0){
+    toggleScroll();
+    return;
+  }
   tscy=scrollY;
   tsHistory=[];
 },{passive:true});
