@@ -1,0 +1,23 @@
+{
+  "name": "Score Scroll",
+  "short_name": "Score Scroll",
+  "description": "楽譜画像スクロールアプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0d1a",
+  "theme_color": "#0d0d1a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwZDBkMWEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxYTFhMmUiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgcng9IjM0IiBmaWxsPSJ1cmwoI2JnKSIvPjxlbGxpcHNlIGN4PSI1OCIgY3k9IjEwOSIgcng9IjE5IiByeT0iMTQiIGZpbGw9IiNmNGM4NDIiIHRyYW5zZm9ybT0icm90YXRlKC0yMCw1OCwxMDkpIi8+PGVsbGlwc2UgY3g9IjExOSIgY3k9IjkwIiByeD0iMTkiIHJ5PSIxNCIgZmlsbD0iI2Y0Yzg0MiIgdHJhbnNmb3JtPSJyb3RhdGUoLTIwLDExOSw5MCkiLz48cmVjdCB4PSI3NiIgeT0iNDIiIHdpZHRoPSI0IiBoZWlnaHQ9IjY3IiBmaWxsPSIjZjRjODQyIi8+PHJlY3QgeD0iMTM3IiB5PSIyNSIgd2lkdGg9IjQiIGhlaWdodD0iNjUiIGZpbGw9IiNmNGM4NDIiLz48cG9seWdvbiBwb2ludHM9Ijc2LDQyIDE0MSwyNSAxNDEsMzQgNzYsNTEiIGZpbGw9IiNmNGM4NDIiLz48cG9seWdvbiBwb2ludHM9Ijk2LDE3NyA2NywxNTQgMTI1LDE1NCIgZmlsbD0iIzViYzhhZiIvPjwvc3ZnPg==",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwZDBkMWEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxYTFhMmUiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjkyIiBmaWxsPSJ1cmwoI2JnKSIvPjxlbGxpcHNlIGN4PSIxNTQiIGN5PSIyOTEiIHJ4PSI1MSIgcnk9IjM4IiBmaWxsPSIjZjRjODQyIiB0cmFuc2Zvcm09InJvdGF0ZSgtMjAsMTU0LDI5MSkiLz48ZWxsaXBzZSBjeD0iMzE3IiBjeT0iMjQwIiByeD0iNTEiIHJ5PSIzOCIgZmlsbD0iI2Y0Yzg0MiIgdHJhbnNmb3JtPSJyb3RhdGUoLTIwLDMxNywyNDApIi8+PHJlY3QgeD0iMjAyIiB5PSIxMTIiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNzkiIGZpbGw9IiNmNGM4NDIiLz48cmVjdCB4PSIzNjYiIHk9IjY2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTc0IiBmaWxsPSIjZjRjODQyIi8+PHBvbHlnb24gcG9pbnRzPSIyMDIsMTEyIDM3Nyw2NiAzNzcsOTEgMjAyLDEzNyIgZmlsbD0iI2Y0Yzg0MiIvPjxwb2x5Z29uIHBvaW50cz0iMjU2LDQ3MiAxNzksMTEyIDMzMyw0MTIiIGZpbGw9IiM1YmM4YWYiLz48L3N2Zz4=",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
