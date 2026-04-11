@@ -160,6 +160,9 @@ body.draw-mode #scroll-wrap{cursor:crosshair}
   <div id="setlist-list"></div>
   <div id="setlist-footer">
     <button class="btn btn-accent" style="flex:1" onclick="openAddPanel()">&#43; 楽譜を追加</button>
+    <button class="btn" style="flex:1" onclick="exportAll()">&#128229; バックアップ</button>
+    <button class="btn" style="flex:1" onclick="document.getElementById('restore-input').click()">&#128228; 復元</button>
+    <input type="file" id="restore-input" accept=".json" onchange="importAll(this)">
   </div>
 </div>
 
@@ -650,6 +653,65 @@ document.addEventListener('DOMContentLoaded',function(){
 
   window.addEventListener('resize',function(){if(drawMode)resizeCanvas();});
 });
+
+// ==== BACKUP / RESTORE ====
+function exportAll(){
+  if(!setlist.length){alert('\u66f2\u304c\u3042\u308a\u307e\u305b\u3093');return;}
+  var pending=setlist.length;
+  var result=new Array(setlist.length);
+  setlist.forEach(function(song,i){
+    loadImages(song.imageKey,function(imgs){
+      result[i]={
+        title:song.title,imageKey:song.imageKey,
+        speedTarget:song.speedTarget||40,
+        imgScale:song.imgScale||1.0,
+        imgFit:(song.imgFit!==undefined)?song.imgFit:true,
+        imgInverted:song.imgInverted||false,
+        memo:song.memo||'',
+        images:imgs
+      };
+      pending--;
+      if(pending===0){
+        var blob=new Blob([JSON.stringify({version:2,exportedAt:new Date().toISOString(),songs:result})],{type:'application/json'});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');
+        var d=new Date();
+        a.download='score-scroll-'+d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2)+'.json';
+        a.href=url;document.body.appendChild(a);a.click();
+        setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+      }
+    });
+  });
+}
+
+function importAll(input){
+  var file=input.files[0];if(!file)return;input.value='';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(!data.songs||!Array.isArray(data.songs)){alert('\u5f62\u5f0f\u30a8\u30e9\u30fc');return;}
+      var mode=confirm(data.songs.length+'\u66f2\u304c\u898b\u3064\u304b\u308a\u307e\u3057\u305f\u3002\n\n\u3010OK\u3011\u8ffd\u52a0\n\u3010\u30ad\u30e3\u30f3\u30bb\u30eb\u3011\u5168\u3066\u7f6e\u304d\u63db\u3048');
+      if(!mode&&!confirm('\u73fe\u5728\u306e'+setlist.length+'\u66f2\u3092\u5168\u3066\u524a\u9664\u3057\u3066\u7f6e\u304d\u63db\u3048\u307e\u3059\u304b\uff1f'))return;
+      var pending=data.songs.length;
+      var newSongs=new Array(data.songs.length);
+      data.songs.forEach(function(s,i){
+        var key='img_'+Date.now()+'_'+i;
+        newSongs[i]={title:s.title,imageKey:key,speedTarget:s.speedTarget||40,imgScale:s.imgScale||1.0,imgFit:(s.imgFit!==undefined)?s.imgFit:true,imgInverted:s.imgInverted||false,memo:s.memo||''};
+        saveImages(key,s.images||[],function(){
+          pending--;
+          if(pending===0){
+            if(mode){data.songs.forEach(function(ns,j){setlist.push(newSongs[j]);});}
+            else{setlist=newSongs;currentIndex=0;}
+            saveState();render();closeSetlist();
+            alert('\u5fa9\u5143\u5b8c\u4e86\uff01 '+data.songs.length+'\u66f2');
+          }
+        });
+      });
+    }catch(err){alert('\u30a8\u30e9\u30fc: '+err.message);}
+  };
+  reader.readAsText(file);
+}
 window.onerror=function(msg,src,line){
   var d=document.createElement('div');
   d.style.cssText='position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;font-size:12px;padding:8px;z-index:9999';
